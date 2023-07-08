@@ -1,9 +1,8 @@
+use crate::{http::request_document, Error, HandlerResult};
 use encoding::{all::ISO_8859_1, Encoding};
 use form_urlencoded::byte_serialize;
 use reqwest::RequestBuilder;
 use scraper::{ElementRef, Html};
-
-use crate::{http::request_document, Error, HandlerResult};
 
 const FORM_URL: &str = "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi?Kursid=245802";
 const SIGNUP_URL: &str = "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi";
@@ -15,7 +14,7 @@ async fn signup() -> HandlerResult {
     let request = client.get(FORM_URL);
     let document = request_document(request).await?;
     let form = parse_form(&document).await?;
-    let mut params = params_from_form(form, false);
+    let params = params_from_form(form, false);
     // add_user_data(&mut params); TODO: Load participant, add params from 'as_params()'
     let body = request_body_from_params(params)?;
 

@@ -1,5 +1,7 @@
 use crate::participant::Participant;
+use crate::participant::{Gender, Status};
 use crate::HandlerResult;
+use sqlx::{Pool, Postgres};
 use strum::IntoEnumIterator;
 use teloxide::{
     dispatching::dialogue::InMemStorage,
@@ -8,7 +10,6 @@ use teloxide::{
     Bot,
 };
 
-use crate::participant::{Gender, Status};
 pub type MyDialogue = Dialogue<State, InMemStorage<State>>;
 
 #[derive(Clone, Default)]
@@ -16,68 +17,15 @@ pub enum State {
     #[default]
     Start,
     ReceiveGivenName,
-    ReceiveLastName {
-        given_name: String,
-    },
-    ReceiveGender {
-        given_name: String,
-        last_name: String,
-    },
-    ReceiveStreet {
-        given_name: String,
-        last_name: String,
-        gender: Gender,
-    },
-    ReceiveCity {
-        given_name: String,
-        last_name: String,
-        gender: Gender,
-        street: String,
-    },
-    ReceivePhone {
-        given_name: String,
-        last_name: String,
-        gender: Gender,
-        street: String,
-        city: String,
-    },
-    ReceiveEmail {
-        given_name: String,
-        last_name: String,
-        gender: Gender,
-        street: String,
-        city: String,
-        phone: String,
-    },
-    ReceiveStatus {
-        given_name: String,
-        last_name: String,
-        gender: Gender,
-        street: String,
-        city: String,
-        phone: String,
-        email: String,
-    },
-    ReceiveMatriculationNumber {
-        given_name: String,
-        last_name: String,
-        gender: Gender,
-        street: String,
-        city: String,
-        phone: String,
-        email: String,
-        status: Status,
-    },
-    ReceiveBusinessPhone {
-        given_name: String,
-        last_name: String,
-        gender: Gender,
-        street: String,
-        city: String,
-        phone: String,
-        email: String,
-        status: Status,
-    },
+    ReceiveLastName,
+    ReceiveGender,
+    ReceiveStreet,
+    ReceiveCity,
+    ReceivePhone,
+    ReceiveEmail,
+    ReceiveStatus,
+    ReceiveMatriculationNumber,
+    ReceiveBusinessPhone,
 }
 
 pub async fn dialogue_start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
@@ -87,16 +35,24 @@ pub async fn dialogue_start(bot: Bot, dialogue: MyDialogue, msg: Message) -> Han
     Ok(())
 }
 
-pub async fn receive_given_name(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+pub async fn receive_given_name(
+    bot: Bot,
+    dialogue: MyDialogue,
+    msg: Message,
+    pool: Pool<Postgres>,
+) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            sqlx::query!(
+                "UPDATE participants SET given_name = $1 WHERE chat_id = $2",
+                text,
+                msg.chat.id.0
+            )
+            .execute(&pool)
+            .await?;
             bot.send_message(msg.chat.id, "Bitte gib deinen Nachnamen ein.")
                 .await?;
-            dialogue
-                .update(State::ReceiveLastName {
-                    given_name: text.into(),
-                })
-                .await?;
+            dialogue.update(State::ReceiveLastName).await?;
         }
         None => {
             bot.send_message(
@@ -112,21 +68,23 @@ pub async fn receive_given_name(bot: Bot, dialogue: MyDialogue, msg: Message) ->
 pub async fn receive_last_name(
     bot: Bot,
     dialogue: MyDialogue,
-    given_name: String,
     msg: Message,
+    pool: Pool<Postgres>,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            sqlx::query!(
+                "UPDATE participants SET last_name = $1 WHERE chat_id = $2",
+                text,
+                msg.chat.id.0
+            )
+            .execute(&pool)
+            .await?;
             let keyboard = make_gender_keyboard();
             bot.send_message(msg.chat.id, "Bitte wähle dein Geschlecht aus.")
                 .reply_markup(keyboard)
                 .await?;
-            dialogue
-                .update(State::ReceiveGender {
-                    given_name,
-                    last_name: text.into(),
-                })
-                .await?;
+            dialogue.update(State::ReceiveGender).await?;
         }
         None => {
             bot.send_message(
@@ -142,24 +100,25 @@ pub async fn receive_last_name(
 pub async fn receive_gender(
     bot: Bot,
     dialogue: MyDialogue,
-    (given_name, last_name): (String, String),
     q: CallbackQuery,
+    pool: Pool<Postgres>,
 ) -> HandlerResult {
     bot.answer_callback_query(q.id).await?;
     match q.data.map(|text| text.parse::<Gender>()) {
         Some(Ok(gender)) => {
+            sqlx::query!(
+                "UPDATE participants SET gender = $1 WHERE chat_id = $2",
+                gender as Gender,
+                dialogue.chat_id().0
+            )
+            .execute(&pool)
+            .await?;
             bot.send_message(
                 dialogue.chat_id(),
                 "Bitte gib deine Straße und Hausnummer ein. Z.B. Musterstr. 123",
             )
             .await?;
-            dialogue
-                .update(State::ReceiveStreet {
-                    given_name,
-                    last_name,
-                    gender,
-                })
-                .await?;
+            dialogue.update(State::ReceiveStreet).await?;
         }
         _ => {
             let keyboard = make_gender_keyboard();
@@ -187,14 +146,7 @@ pub async fn receive_street(
                 "Bitte gib deine Postleitzahl und deinen Wohnort ein. Z.B. 50678 Köln",
             )
             .await?;
-            dialogue
-                .update(State::ReceiveCity {
-                    given_name,
-                    last_name,
-                    gender,
-                    street: text.into(),
-                })
-                .await?;
+            dialogue.update(State::ReceiveCity).await?;
         }
         None => {
             bot.send_message(msg.chat.id, "Das habe ich nicht verstanden. Bitte gib deine Straße und Hausnummer ein. Z.B. Musterstr. 123")
@@ -214,15 +166,7 @@ pub async fn receive_city(
         Some(text) => {
             bot.send_message(msg.chat.id, "Bitte gib deine Telefonnummer ein.")
                 .await?;
-            dialogue
-                .update(State::ReceivePhone {
-                    given_name,
-                    last_name,
-                    gender,
-                    street,
-                    city: text.into(),
-                })
-                .await?;
+            dialogue.update(State::ReceivePhone).await?;
         }
         None => {
             bot.send_message(msg.chat.id, "Das habe ich nicht verstanden. Bitte gib deine Postleitzahl und deinen Wohnort ein. Z.B. 50678 Köln")
@@ -242,16 +186,7 @@ pub async fn receive_phone(
         Some(text) => {
             bot.send_message(msg.chat.id, "Bitte gib deine E-Mail-Adresse ein.")
                 .await?;
-            dialogue
-                .update(State::ReceiveEmail {
-                    given_name,
-                    last_name,
-                    gender,
-                    street,
-                    city,
-                    phone: text.into(),
-                })
-                .await?;
+            dialogue.update(State::ReceiveEmail).await?;
         }
         None => {
             bot.send_message(
@@ -283,17 +218,7 @@ pub async fn receive_email(
             bot.send_message(msg.chat.id, "Bitte wähle deinen Status aus:")
                 .reply_markup(keyboard)
                 .await?;
-            dialogue
-                .update(State::ReceiveStatus {
-                    given_name,
-                    last_name,
-                    gender,
-                    street,
-                    city,
-                    phone,
-                    email: text.into(),
-                })
-                .await?
+            dialogue.update(State::ReceiveStatus).await?
         }
         None => {
             bot.send_message(
@@ -326,36 +251,14 @@ pub async fn receive_status(
             if status.is_student() {
                 bot.send_message(dialogue.chat_id(), "Bitte gib deine Matrikelnummer ein.")
                     .await?;
-                dialogue
-                    .update(State::ReceiveMatriculationNumber {
-                        given_name,
-                        last_name,
-                        gender,
-                        street,
-                        city,
-                        phone,
-                        email,
-                        status,
-                    })
-                    .await?;
+                dialogue.update(State::ReceiveMatriculationNumber).await?;
             } else if status.is_employed_at_cgn_uni_related_thing() {
                 bot.send_message(
                     dialogue.chat_id(),
                     "Bitte gib deine dienstliche Telefonnummer ein.",
                 )
                 .await?;
-                dialogue
-                    .update(State::ReceiveBusinessPhone {
-                        given_name,
-                        last_name,
-                        gender,
-                        street,
-                        city,
-                        phone,
-                        email,
-                        status,
-                    })
-                    .await?;
+                dialogue.update(State::ReceiveBusinessPhone).await?;
             } else {
                 let participant = Participant {
                     given_name,

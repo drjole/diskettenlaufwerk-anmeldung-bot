@@ -1,10 +1,9 @@
 use crate::{http::request_document, Error};
+use chrono::DateTime;
 use chrono::TimeZone;
 use chrono_tz::Europe::Berlin;
-use std::collections::HashMap;
-
-use chrono::DateTime;
 use chrono_tz::Tz;
+use std::collections::HashMap;
 use url::Url;
 
 #[derive(Debug)]

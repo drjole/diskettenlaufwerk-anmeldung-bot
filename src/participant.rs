@@ -3,16 +3,16 @@ use strum_macros::EnumIter;
 
 #[derive(Debug)]
 pub struct Participant {
-    pub gender: Gender,
     pub given_name: String,
     pub last_name: String,
+    pub gender: Gender,
     pub street: String,
     pub city: String,
+    pub phone: String,
+    pub email: String,
     pub status: Status,
     pub matriculation_number: String,
     pub business_phone: String,
-    pub email: String,
-    pub phone: String,
 }
 
 impl Participant {
@@ -32,11 +32,13 @@ impl Participant {
     }
 }
 
-#[derive(Clone, Debug, EnumIter)]
+#[derive(Clone, Debug, EnumIter, sqlx::Type)]
+#[sqlx(type_name = "gender")]
+#[sqlx(rename_all = "lowercase")]
 pub enum Gender {
     Male,
     Female,
-    Divers,
+    Diverse,
 }
 
 impl FromStr for Gender {
@@ -46,7 +48,7 @@ impl FromStr for Gender {
         match s {
             "M" => Ok(Gender::Male),
             "W" => Ok(Gender::Female),
-            "D" => Ok(Gender::Divers),
+            "D" => Ok(Gender::Diverse),
             _ => Err("illegal gender".into()),
         }
     }
@@ -57,12 +59,14 @@ impl std::fmt::Display for Gender {
         match self {
             Gender::Male => write!(f, "M"),
             Gender::Female => write!(f, "W"),
-            Gender::Divers => write!(f, "D"),
+            Gender::Diverse => write!(f, "D"),
         }
     }
 }
 
-#[derive(Clone, Debug, EnumIter)]
+#[derive(Clone, Debug, EnumIter, sqlx::Type)]
+#[sqlx(type_name = "status")]
+#[sqlx(rename_all = "lowercase")]
 pub enum Status {
     StudentUniKoeln,
     StudentDSHSKoeln,
@@ -105,26 +109,26 @@ impl Status {
     }
 
     pub fn is_student(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Status::StudentUniKoeln
-            | Status::StudentDSHSKoeln
-            | Status::StudentTHKoeln
-            | Status::StudentMacromediaKoeln
-            | Status::StudentKunsthochschuleFuerMedien
-            | Status::StudentHochschuleFuerMedienKommunikationUndWirtschaft
-            | Status::StudentHochschuleFuerMusikKoeln
-            | Status::StudentAndereHochschulen => true,
-            _ => false,
-        }
+                | Status::StudentDSHSKoeln
+                | Status::StudentTHKoeln
+                | Status::StudentMacromediaKoeln
+                | Status::StudentKunsthochschuleFuerMedien
+                | Status::StudentHochschuleFuerMedienKommunikationUndWirtschaft
+                | Status::StudentHochschuleFuerMusikKoeln
+                | Status::StudentAndereHochschulen
+        )
     }
 
     pub fn is_employed_at_cgn_uni_related_thing(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Status::BeschaeftigteStaatlicherKoelnerHochschulen
-            | Status::BeschaeftigteUniKlinikKoeln
-            | Status::BeschaeftigteKoelnerStudierendenwerk => true,
-            _ => false,
-        }
+                | Status::BeschaeftigteUniKlinikKoeln
+                | Status::BeschaeftigteKoelnerStudierendenwerk
+        )
     }
 }
 
