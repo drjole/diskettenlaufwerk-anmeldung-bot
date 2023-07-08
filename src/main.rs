@@ -156,12 +156,6 @@ fn schema() -> UpdateHandler<Error> {
         .branch(callback_query_handler)
 }
 
-async fn help(bot: Bot, msg: Message) -> HandlerResult {
-    bot.send_message(msg.chat.id, Command::descriptions().to_string())
-        .await?;
-    Ok(())
-}
-
 async fn show_data(bot: Bot, msg: Message) -> HandlerResult {
     bot.send_message(msg.chat.id, "data").await?;
     Ok(())
