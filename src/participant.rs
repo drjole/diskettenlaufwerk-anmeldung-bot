@@ -3,38 +3,85 @@ use strum_macros::EnumIter;
 
 #[derive(Debug)]
 pub struct Participant {
-    pub given_name: String,
-    pub last_name: String,
-    pub gender: Gender,
-    pub street: String,
-    pub city: String,
-    pub phone: String,
-    pub email: String,
-    pub status: Status,
-    pub matriculation_number: String,
-    pub business_phone: String,
+    pub chat_id: i64,
+    pub given_name: Option<String>,
+    pub last_name: Option<String>,
+    pub gender: Option<Gender>,
+    pub street: Option<String>,
+    pub city: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub status: Option<Status>,
+    pub matriculation_number: Option<String>,
+    pub business_phone: Option<String>,
 }
 
 impl Participant {
     fn as_params(&self) -> Vec<(String, String)> {
         vec![
-            ("Geschlecht".into(), self.gender.to_string()),
-            ("Vorname".into(), self.given_name.clone()),
-            ("Name".into(), self.last_name.clone()),
-            ("Strasse".into(), self.street.clone()),
-            ("Ort".into(), self.city.clone()),
-            ("Statusorig".into(), self.status.as_str().to_string()),
-            ("Matnr".into(), self.matriculation_number.clone()),
-            ("Institut".into(), self.business_phone.clone()),
-            ("Mail".into(), self.email.clone()),
-            ("Tel".into(), self.phone.clone()),
+            (
+                "Geschlecht".into(),
+                self.gender
+                    .clone()
+                    .map_or(String::from(""), |g| g.to_string()),
+            ),
+            (
+                "Vorname".into(),
+                self.given_name.clone().unwrap_or(String::from("")),
+            ),
+            (
+                "Name".into(),
+                self.last_name.clone().unwrap_or(String::from("")),
+            ),
+            (
+                "Strasse".into(),
+                self.street.clone().unwrap_or(String::from("")),
+            ),
+            ("Ort".into(), self.city.clone().unwrap_or(String::from(""))),
+            (
+                "Statusorig".into(),
+                self.status
+                    .clone()
+                    .map_or(String::from(""), |s| s.as_str().to_string()),
+            ),
+            (
+                "Matnr".into(),
+                self.matriculation_number
+                    .clone()
+                    .unwrap_or(String::from("")),
+            ),
+            (
+                "Institut".into(),
+                self.business_phone.clone().unwrap_or(String::from("")),
+            ),
+            (
+                "Mail".into(),
+                self.email.clone().unwrap_or(String::from("")),
+            ),
+            ("Tel".into(), self.phone.clone().unwrap_or(String::from(""))),
         ]
+    }
+}
+
+impl std::fmt::Display for Participant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r#"{} {}
+{}
+{}
+{}"#,
+            self.given_name.clone().unwrap_or_default(),
+            self.last_name.clone().unwrap_or_default(),
+            self.street.clone().unwrap_or_default(),
+            self.city.clone().unwrap_or_default(),
+            self.status.clone().map_or("", |s| s.to_string())
+        )
     }
 }
 
 #[derive(Clone, Debug, EnumIter, sqlx::Type)]
 #[sqlx(type_name = "gender")]
-#[sqlx(rename_all = "lowercase")]
 pub enum Gender {
     Male,
     Female,
@@ -66,7 +113,6 @@ impl std::fmt::Display for Gender {
 
 #[derive(Clone, Debug, EnumIter, sqlx::Type)]
 #[sqlx(type_name = "status")]
-#[sqlx(rename_all = "lowercase")]
 pub enum Status {
     StudentUniKoeln,
     StudentDSHSKoeln,

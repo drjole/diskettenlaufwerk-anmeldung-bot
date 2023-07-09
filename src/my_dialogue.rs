@@ -1,4 +1,3 @@
-use crate::participant::Participant;
 use crate::participant::{Gender, Status};
 use crate::HandlerResult;
 use sqlx::{Pool, Postgres};
@@ -26,13 +25,6 @@ pub enum State {
     ReceiveStatus,
     ReceiveMatriculationNumber,
     ReceiveBusinessPhone,
-}
-
-pub async fn dialogue_start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
-    bot.send_message(msg.chat.id, "Bitte gib deinen Vornamen ein.")
-        .await?;
-    dialogue.update(State::ReceiveGivenName).await?;
-    Ok(())
 }
 
 pub async fn receive_given_name(
@@ -136,11 +128,18 @@ pub async fn receive_gender(
 pub async fn receive_street(
     bot: Bot,
     dialogue: MyDialogue,
-    (given_name, last_name, gender): (String, String, Gender),
     msg: Message,
+    pool: Pool<Postgres>,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            sqlx::query!(
+                "UPDATE participants SET street = $1 WHERE chat_id = $2",
+                text,
+                msg.chat.id.0
+            )
+            .execute(&pool)
+            .await?;
             bot.send_message(
                 msg.chat.id,
                 "Bitte gib deine Postleitzahl und deinen Wohnort ein. Z.B. 50678 Köln",
@@ -159,11 +158,18 @@ pub async fn receive_street(
 pub async fn receive_city(
     bot: Bot,
     dialogue: MyDialogue,
-    (given_name, last_name, gender, street): (String, String, Gender, String),
     msg: Message,
+    pool: Pool<Postgres>,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            sqlx::query!(
+                "UPDATE participants SET city = $1 WHERE chat_id = $2",
+                text,
+                msg.chat.id.0
+            )
+            .execute(&pool)
+            .await?;
             bot.send_message(msg.chat.id, "Bitte gib deine Telefonnummer ein.")
                 .await?;
             dialogue.update(State::ReceivePhone).await?;
@@ -179,11 +185,18 @@ pub async fn receive_city(
 pub async fn receive_phone(
     bot: Bot,
     dialogue: MyDialogue,
-    (given_name, last_name, gender, street, city): (String, String, Gender, String, String),
     msg: Message,
+    pool: Pool<Postgres>,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            sqlx::query!(
+                "UPDATE participants SET phone = $1 WHERE chat_id = $2",
+                text,
+                msg.chat.id.0
+            )
+            .execute(&pool)
+            .await?;
             bot.send_message(msg.chat.id, "Bitte gib deine E-Mail-Adresse ein.")
                 .await?;
             dialogue.update(State::ReceiveEmail).await?;
@@ -202,18 +215,18 @@ pub async fn receive_phone(
 pub async fn receive_email(
     bot: Bot,
     dialogue: MyDialogue,
-    (given_name, last_name, gender, street, city, phone): (
-        String,
-        String,
-        Gender,
-        String,
-        String,
-        String,
-    ),
     msg: Message,
+    pool: Pool<Postgres>,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
+            sqlx::query!(
+                "UPDATE participants SET email = $1 WHERE chat_id = $2",
+                text,
+                msg.chat.id.0
+            )
+            .execute(&pool)
+            .await?;
             let keyboard = make_status_keyboard();
             bot.send_message(msg.chat.id, "Bitte wähle deinen Status aus:")
                 .reply_markup(keyboard)
@@ -234,20 +247,19 @@ pub async fn receive_email(
 pub async fn receive_status(
     bot: Bot,
     dialogue: MyDialogue,
-    (given_name, last_name, gender, street, city, phone, email): (
-        String,
-        String,
-        Gender,
-        String,
-        String,
-        String,
-        String,
-    ),
     q: CallbackQuery,
+    pool: Pool<Postgres>,
 ) -> HandlerResult {
     bot.answer_callback_query(q.id).await?;
     match q.data.map(|text| text.parse::<Status>()) {
         Some(Ok(status)) => {
+            sqlx::query!(
+                "UPDATE participants SET status = $1 WHERE chat_id = $2",
+                status.clone() as Status,
+                dialogue.chat_id().0
+            )
+            .execute(&pool)
+            .await?;
             if status.is_student() {
                 bot.send_message(dialogue.chat_id(), "Bitte gib deine Matrikelnummer ein.")
                     .await?;
@@ -260,19 +272,7 @@ pub async fn receive_status(
                 .await?;
                 dialogue.update(State::ReceiveBusinessPhone).await?;
             } else {
-                let participant = Participant {
-                    given_name,
-                    last_name,
-                    gender,
-                    street,
-                    city,
-                    phone,
-                    email,
-                    status,
-                    matriculation_number: "".into(),
-                    business_phone: "".into(),
-                };
-                dialogue_done(bot, dialogue, participant).await?;
+                dialogue_done(bot, dialogue).await?;
             }
         }
         _ => {
@@ -291,33 +291,19 @@ pub async fn receive_status(
 pub async fn receive_matriculation_number(
     bot: Bot,
     dialogue: MyDialogue,
-    (given_name, last_name, gender, street, city, phone, email, status): (
-        String,
-        String,
-        Gender,
-        String,
-        String,
-        String,
-        String,
-        Status,
-    ),
     msg: Message,
+    pool: Pool<Postgres>,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
-            let participant = Participant {
-                gender,
-                given_name,
-                last_name,
-                street,
-                city,
-                status,
-                email,
-                phone,
-                matriculation_number: text.into(),
-                business_phone: "".into(),
-            };
-            dialogue_done(bot, dialogue, participant).await?;
+            sqlx::query!(
+                "UPDATE participants SET matriculation_number = $1 WHERE chat_id = $2",
+                text,
+                msg.chat.id.0
+            )
+            .execute(&pool)
+            .await?;
+            dialogue_done(bot, dialogue).await?;
         }
         None => {
             bot.send_message(
@@ -333,33 +319,19 @@ pub async fn receive_matriculation_number(
 pub async fn receive_business_phone(
     bot: Bot,
     dialogue: MyDialogue,
-    (given_name, last_name, gender, street, city, phone, email, status): (
-        String,
-        String,
-        Gender,
-        String,
-        String,
-        String,
-        String,
-        Status,
-    ),
     msg: Message,
+    pool: Pool<Postgres>,
 ) -> HandlerResult {
     match msg.text() {
         Some(text) => {
-            let participant = Participant {
-                gender,
-                given_name,
-                last_name,
-                street,
-                city,
-                status,
-                email,
-                phone,
-                matriculation_number: "".into(),
-                business_phone: text.into(),
-            };
-            dialogue_done(bot, dialogue, participant).await?;
+            sqlx::query!(
+                "UPDATE participants SET business_phone = $1 WHERE chat_id = $2",
+                text,
+                msg.chat.id.0
+            )
+            .execute(&pool)
+            .await?;
+            dialogue_done(bot, dialogue).await?;
         }
         None => {
             bot.send_message(
@@ -372,8 +344,7 @@ pub async fn receive_business_phone(
     Ok(())
 }
 
-async fn dialogue_done(bot: Bot, dialogue: MyDialogue, participant: Participant) -> HandlerResult {
-    dbg!(participant);
+async fn dialogue_done(bot: Bot, dialogue: MyDialogue) -> HandlerResult {
     bot.send_message(dialogue.chat_id(), "Super, damit habe ich alle Daten, die ich brauche. Wenn ein neues Training ansteht, wirst du von mir benachrichtigt. Du kannst dich dann über eine kurze Antwort zum Training anmelden lassen.").await?;
     dialogue.exit().await?;
     Ok(())

@@ -6,11 +6,12 @@ mod signup;
 
 extern crate encoding;
 
+use crate::participant::Participant;
 use dotenv::dotenv;
 use my_dialogue::{
-    dialogue_start, receive_business_phone, receive_city, receive_email, receive_gender,
-    receive_given_name, receive_last_name, receive_matriculation_number, receive_phone,
-    receive_status, receive_street, MyDialogue, State,
+    receive_business_phone, receive_city, receive_email, receive_gender, receive_given_name,
+    receive_last_name, receive_matriculation_number, receive_phone, receive_status, receive_street,
+    MyDialogue, State,
 };
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::env;
@@ -68,7 +69,6 @@ fn schema() -> UpdateHandler<Error> {
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
-        .branch(case![State::Start].endpoint(dialogue_start))
         .branch(case![State::ReceiveGivenName].endpoint(receive_given_name))
         .branch(case![State::ReceiveLastName].endpoint(receive_last_name))
         .branch(case![State::ReceiveStreet].endpoint(receive_street))
@@ -88,8 +88,20 @@ fn schema() -> UpdateHandler<Error> {
         .branch(callback_query_handler)
 }
 
-async fn show_data(bot: Bot, msg: Message) -> HandlerResult {
-    bot.send_message(msg.chat.id, "data").await?;
+async fn show_data(bot: Bot, msg: Message, pool: Pool<Postgres>) -> HandlerResult {
+    let participant = sqlx::query_as!(
+        Participant,
+        r#"
+        SELECT chat_id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", matriculation_number, business_phone
+        FROM participants
+        WHERE chat_id = $1
+        "#,
+        msg.chat.id.0
+    )
+    .fetch_one(&pool)
+    .await?;
+    bot.send_message(msg.chat.id, participant.to_string())
+        .await?;
     Ok(())
 }
 
