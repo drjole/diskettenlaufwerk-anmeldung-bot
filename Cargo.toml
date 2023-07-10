@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.24"
 chrono-tz = "0.8.2"
+color-eyre = "0.6.2"
 dotenv = "0.15.0"
 encoding = "0.2.33"
 form_urlencoded = "1.1.0"
@@ -16,17 +17,17 @@ log = "0.4.17"
 pretty_env_logger = "0.4.0"
 reqwest = "0.11.17"
 scraper = "0.16.0"
+serde = { version = "1.0.171", features = ["derive"] }
 sqlx = { version = "0.7", features = [
-	"runtime-tokio",
-	"tls-rustls",
-	"postgres",
-	"macros",
-	"migrate",
-	"chrono",
+  "runtime-tokio",
+  "tls-rustls",
+  "postgres",
+  "macros",
+  "migrate",
+  "chrono",
 ] }
-strum = "0.25"
-strum_macros = "0.25"
-teloxide = { version = "0.12.2", features = ["macros"] }
+strum = { version = "0.25", features = ["derive"] }
+teloxide = { version = "0.12.2", features = ["macros", "throttle"] }
 tokio = { version = "1.28.0", features = ["full"] }
 url = "2.3.1"
 

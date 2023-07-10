@@ -2,8 +2,8 @@ FROM rust:1.67-alpine as builder
 WORKDIR /usr/src/myapp
 COPY Cargo.toml .
 RUN mkdir src \
-    && echo "// dummy file" > src/lib.rs \
-    && cargo build
+  && echo "// dummy file" > src/lib.rs \
+  && cargo build
 RUN rm src/lib.rs
 COPY . .
 RUN cargo install --path .

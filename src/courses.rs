@@ -1,26 +1,8 @@
 use crate::{http::request_document, Error};
-use chrono::DateTime;
 use chrono::TimeZone;
 use chrono_tz::Europe::Berlin;
-use chrono_tz::Tz;
 use std::collections::HashMap;
 use url::Url;
-
-#[derive(Debug)]
-struct Course {
-    url: Url,
-    start_time: DateTime<Tz>,
-    end_time: DateTime<Tz>,
-    level: String,
-    location: String,
-    trainer: String,
-}
-
-impl Course {
-    fn open(&self) -> bool {
-        self.url.path() == "/cgi/anmeldung.fcgi"
-    }
-}
 
 async fn load_courses() -> Result<Vec<Course>, Error> {
     const COURSES_URL: &str =
