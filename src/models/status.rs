@@ -1,23 +1,39 @@
-use strum::{Display, EnumIter, EnumString};
+use strum::{Display, EnumIter, EnumProperty, EnumString};
 
-#[derive(Clone, Debug, Display, EnumString, EnumIter, sqlx::Type)]
+#[derive(Clone, Debug, Display, EnumString, EnumProperty, EnumIter, sqlx::Type)]
 #[sqlx(type_name = "status")]
 pub enum Status {
+    #[strum(props(pretty = "Stud. Uni Köln"))]
     StudentUniKoeln,
+    #[strum(props(pretty = "Stud. DSHS Köln"))]
     StudentDSHSKoeln,
+    #[strum(props(pretty = "Stud. TH Köln"))]
     StudentTHKoeln,
+    #[strum(props(pretty = "Stud. Macromedia Köln"))]
     StudentMacromediaKoeln,
+    #[strum(props(pretty = "Stud. KHM Köln"))]
     StudentKunsthochschuleFuerMedien,
+    #[strum(props(pretty = "Stud. HMKW Köln"))]
     StudentHochschuleFuerMedienKommunikationUndWirtschaft,
+    #[strum(props(pretty = "Stud. HfMT Köln"))]
     StudentHochschuleFuerMusikKoeln,
+    #[strum(props(pretty = "Stud. anderer Hochschulen"))]
     StudentAndereHochschulen,
+    #[strum(props(pretty = "Beschäft. staatl. Kölner Hochschulen"))]
     BeschaeftigteStaatlicherKoelnerHochschulen,
+    #[strum(props(pretty = "Beschäft. UniKlinik Köln"))]
     BeschaeftigteUniKlinikKoeln,
+    #[strum(props(pretty = "Beschäft. Kölner Studierendenwerk"))]
     BeschaeftigteKoelnerStudierendenwerk,
+    #[strum(props(pretty = "Mitglied von KölnAlumni"))]
     MitgliedKoelnAlumni,
+    #[strum(props(pretty = "Azubi Uni Köln"))]
     AzubiUniKoeln,
+    #[strum(props(pretty = "Azubi UniKlinik Köln"))]
     AzubiUniKlinik,
+    #[strum(props(pretty = "Azubi Kölner Studierendenwerk"))]
     AzubiKoelnerStudierendenwerk,
+    #[strum(props(pretty = "Gast"))]
     Gast,
 }
 

@@ -1,10 +1,13 @@
-use strum::{Display, EnumIter, EnumString};
+use strum::{Display, EnumIter, EnumProperty, EnumString};
 
-#[derive(Clone, Debug, Display, EnumString, EnumIter, sqlx::Type)]
+#[derive(Clone, Debug, Display, EnumString, EnumProperty, EnumIter, sqlx::Type)]
 #[sqlx(type_name = "gender")]
 pub enum Gender {
+    #[strum(props(pretty = "Männlich"))]
     Male,
+    #[strum(props(pretty = "Weiblich"))]
     Female,
+    #[strum(props(pretty = "Divers"))]
     Diverse,
 }
 

@@ -2,7 +2,10 @@ use sqlx::{Pool, Postgres};
 use teloxide::prelude::*;
 
 use crate::{
-    bot::schema::{MyDialogue, State},
+    bot::{
+        schema::{MyDialogue, State},
+        utils::update_dialogue,
+    },
     models::participant::Participant,
     Error,
 };
@@ -21,10 +24,7 @@ pub async fn enter_data(
         ..Default::default()
     };
     participant.insert(&pool).await?;
-
-    bot.send_message(msg.chat.id, "Bitte gib deinen Vornamen ein.")
-        .await?;
-    dialogue.update(State::ReceiveGivenName).await?;
+    update_dialogue(State::ReceiveGivenName, bot, dialogue, msg).await?;
     Ok(())
 }
 
@@ -39,5 +39,18 @@ pub async fn show_data(bot: Bot, msg: Message, pool: Pool<Postgres>) -> Result<(
         ),
     )
     .await?;
+    Ok(())
+}
+
+pub async fn edit_given_name(
+    bot: Bot,
+    msg: Message,
+    dialogue: MyDialogue,
+    pool: Pool<Postgres>,
+) -> Result<(), Error> {
+    let participant = Participant::find_by_chat_id(&pool, msg.chat.id.0).await?;
+    bot.send_message(msg.chat.id, "Bitte gib deinen Vornamen ein.")
+        .await?;
+    dialogue.update(State::ReceiveGivenName).await?;
     Ok(())
 }

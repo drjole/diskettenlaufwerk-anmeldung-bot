@@ -1,5 +1,6 @@
 use color_eyre::eyre::Result;
 use sqlx::{Pool, Postgres};
+use strum::EnumProperty;
 
 use crate::models::gender::Gender;
 use crate::models::status::Status;
@@ -132,6 +133,18 @@ impl Participant {
         ]
     }
 
+    fn status_related_info_name(&self) -> Option<String> {
+        self.status.clone().and_then(|status| {
+            if status.is_student() {
+                Some(String::from("Matrikelnummer"))
+            } else if status.is_employed_at_cgn_uni_related_thing() {
+                Some(String::from("Dienstliche Telefonnummer"))
+            } else {
+                None
+            }
+        })
+    }
+
     fn status_related_info(&self) -> Option<String> {
         self.status.clone().and_then(|status| {
             if status.is_student() {
@@ -146,23 +159,32 @@ impl Participant {
 }
 
 impl std::fmt::Display for Participant {
+    #[allow(clippy::expect_used)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            r#"{} {}
-{}
-{}
-{}
-{}
-{}
-{}"#,
+            r#"Name: {} {}
+Geschlecht: {}
+Adresse: {}, {}
+Telefonnummer: {}
+E-Mail-Adresse: {}
+Status: {}
+{}: {} "#,
             self.given_name.clone().unwrap_or_default(),
             self.last_name.clone().unwrap_or_default(),
+            self.gender.clone().map_or(String::new(), |g| g
+                .get_str("pretty")
+                .expect("Better add that enum prop")
+                .to_string()),
             self.street.clone().unwrap_or_default(),
             self.city.clone().unwrap_or_default(),
             self.phone.clone().unwrap_or_default(),
             self.email.clone().unwrap_or_default(),
-            self.status.clone().map_or(String::new(), |s| s.to_string()),
+            self.status.clone().map_or(String::new(), |s| s
+                .get_str("pretty")
+                .expect("Better add that enum prop")
+                .to_string()),
+            self.status_related_info_name().unwrap_or_default(),
             self.status_related_info().unwrap_or_default()
         )
     }
