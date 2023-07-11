@@ -14,16 +14,32 @@ pub type MyDialogue = Dialogue<State, InMemStorage<State>>;
 pub enum State {
     #[default]
     Start,
-    ReceiveGivenName,
-    ReceiveLastName,
-    ReceiveGender,
-    ReceiveStreet,
-    ReceiveCity,
-    ReceivePhone,
-    ReceiveEmail,
-    ReceiveStatus,
-    ReceiveMatriculationNumber,
-    ReceiveBusinessPhone,
+    ReceiveGivenName(bool),
+    ReceiveLastName(bool),
+    ReceiveGender(bool),
+    ReceiveStreet(bool),
+    ReceiveCity(bool),
+    ReceivePhone(bool),
+    ReceiveEmail(bool),
+    ReceiveStatus(bool),
+    ReceiveStatusRelatedInfo(bool),
+}
+
+impl State {
+    pub fn is_in_dialogue(&self) -> bool {
+        *match self {
+            State::ReceiveGivenName(in_dialogue)
+            | State::ReceiveLastName(in_dialogue)
+            | State::ReceiveGender(in_dialogue)
+            | State::ReceiveStreet(in_dialogue)
+            | State::ReceiveCity(in_dialogue)
+            | State::ReceivePhone(in_dialogue)
+            | State::ReceiveEmail(in_dialogue)
+            | State::ReceiveStatus(in_dialogue)
+            | State::ReceiveStatusRelatedInfo(in_dialogue) => in_dialogue,
+            State::Start => &false,
+        }
+    }
 }
 
 #[derive(BotCommands, Clone)]
@@ -33,13 +49,15 @@ pub enum State {
 )]
 enum Command {
     #[command(description = "Persönliche Daten eingeben")]
-    EnterData,
+    Start,
     #[command(description = "Persönliche Daten anzeigen")]
     ShowData,
     #[command(description = "Vorname ändern")]
     EditGivenName,
     #[command(description = "Nachname ändern")]
     EditLastName,
+    #[command(description = "Geschlecht ändern")]
+    EditGender,
     #[command(description = "Straße ändern")]
     EditStreet,
     #[command(description = "Stadt ändern")]
@@ -50,10 +68,8 @@ enum Command {
     EditEmail,
     #[command(description = "Status ändern")]
     EditStatus,
-    #[command(description = "Matrikelnummer ändern")]
-    EditMatriculationNumber,
-    #[command(description = "Dienstliche Telefonnummer ändern")]
-    EditBusinessPhone,
+    #[command(description = "Matrikelnummer oder dienstliche Telefonnummer ändern")]
+    EditStatusRelatedInfo,
 }
 
 pub async fn start(pool: Pool<Postgres>) -> Result<()> {
@@ -72,8 +88,8 @@ fn schema() -> UpdateHandler<Error> {
     use dptree::case;
 
     let command_handler = teloxide::filter_command::<Command, _>()
+        .branch(case![Command::Start].endpoint(handlers::enter_data))
         .branch(case![Command::ShowData].endpoint(handlers::show_data))
-        .branch(case![Command::EnterData].endpoint(handlers::enter_data))
         .branch(case![Command::EditGivenName].endpoint(handlers::edit_given_name))
         .branch(case![Command::EditLastName].endpoint(handlers::edit_last_name))
         .branch(case![Command::EditStreet].endpoint(handlers::edit_street))
@@ -81,29 +97,25 @@ fn schema() -> UpdateHandler<Error> {
         .branch(case![Command::EditPhone].endpoint(handlers::edit_phone))
         .branch(case![Command::EditEmail].endpoint(handlers::edit_email))
         .branch(case![Command::EditStatus].endpoint(handlers::edit_status))
-        .branch(
-            case![Command::EditMatriculationNumber].endpoint(handlers::edit_matriculation_number),
-        )
-        .branch(case![Command::EditBusinessPhone].endpoint(handlers::edit_business_phone));
+        .branch(case![Command::EditStatusRelatedInfo].endpoint(handlers::edit_status_related_info));
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
-        .branch(case![State::ReceiveGivenName].endpoint(handlers::receive_given_name))
-        .branch(case![State::ReceiveLastName].endpoint(handlers::receive_last_name))
-        .branch(case![State::ReceiveStreet].endpoint(handlers::receive_street))
-        .branch(case![State::ReceiveCity].endpoint(handlers::receive_city))
-        .branch(case![State::ReceivePhone].endpoint(handlers::receive_phone))
-        .branch(case![State::ReceiveEmail].endpoint(handlers::receive_email))
+        .branch(case![State::ReceiveGivenName(in_dialogue)].endpoint(handlers::receive_given_name))
+        .branch(case![State::ReceiveLastName(in_dialogue)].endpoint(handlers::receive_last_name))
+        .branch(case![State::ReceiveStreet(in_dialogue)].endpoint(handlers::receive_street))
+        .branch(case![State::ReceiveCity(in_dialogue)].endpoint(handlers::receive_city))
+        .branch(case![State::ReceivePhone(in_dialogue)].endpoint(handlers::receive_phone))
+        .branch(case![State::ReceiveEmail(in_dialogue)].endpoint(handlers::receive_email))
         .branch(
-            case![State::ReceiveMatriculationNumber]
-                .endpoint(handlers::receive_matriculation_number),
+            case![State::ReceiveStatusRelatedInfo(in_dialogue)]
+                .endpoint(handlers::receive_status_related_info),
         )
-        .branch(case![State::ReceiveBusinessPhone].endpoint(handlers::receive_business_phone))
         .branch(dptree::endpoint(handlers::invalid));
 
     let callback_query_handler = Update::filter_callback_query()
-        .branch(case![State::ReceiveGender].endpoint(handlers::receive_gender))
-        .branch(case![State::ReceiveStatus].endpoint(handlers::receive_status));
+        .branch(case![State::ReceiveGender(in_dialogue)].endpoint(handlers::receive_gender))
+        .branch(case![State::ReceiveStatus(in_dialogue)].endpoint(handlers::receive_status));
 
     dialogue::enter::<Update, InMemStorage<State>, State, _>()
         .branch(message_handler)

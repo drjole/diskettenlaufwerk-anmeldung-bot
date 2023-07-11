@@ -4,7 +4,7 @@ use teloxide::prelude::*;
 use crate::{
     bot::{
         schema::{MyDialogue, State},
-        utils::{gender_keyboard, status_keyboard},
+        utils::{gender_keyboard, status_keyboard, update_dialogue},
     },
     models::{gender::Gender, participant::Participant, status::Status},
     Error,
@@ -21,12 +21,7 @@ pub async fn receive_gender(
     if let Some(Ok(gender)) = q.data.map(|text| text.parse::<Gender>()) {
         participant.gender = Some(gender);
         participant.update(&pool).await?;
-        bot.send_message(
-            dialogue.chat_id(),
-            "Bitte gib deine Straße und Hausnummer ein. Z.B. Musterstr. 123",
-        )
-        .await?;
-        dialogue.update(State::ReceiveStreet).await?;
+        update_dialogue(State::ReceiveStreet(true), bot, dialogue, &pool).await?;
     } else {
         let keyboard = gender_keyboard();
         bot.send_message(
@@ -50,20 +45,7 @@ pub async fn receive_status(
     if let Some(Ok(status)) = q.data.map(|text| text.parse::<Status>()) {
         participant.status = Some(status.clone());
         participant.update(&pool).await?;
-        if status.is_student() {
-            bot.send_message(dialogue.chat_id(), "Bitte gib deine Matrikelnummer ein.")
-                .await?;
-            dialogue.update(State::ReceiveMatriculationNumber).await?;
-        } else if status.is_employed_at_cgn_uni_related_thing() {
-            bot.send_message(
-                dialogue.chat_id(),
-                "Bitte gib deine dienstliche Telefonnummer ein.",
-            )
-            .await?;
-            dialogue.update(State::ReceiveBusinessPhone).await?;
-        } else {
-            bot.send_message(dialogue.chat_id(), "Done!").await?;
-        }
+        update_dialogue(State::ReceiveStatusRelatedInfo(true), bot, dialogue, &pool).await?;
     } else {
         let keyboard = status_keyboard();
         bot.send_message(

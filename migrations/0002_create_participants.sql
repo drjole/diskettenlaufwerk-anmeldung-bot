@@ -8,6 +8,5 @@ CREATE TABLE participants (
     phone text default null,
     email text default null,
     status status default null,
-    matriculation_number text default null,
-    business_phone text default null
+    status_related_info text default null
 );

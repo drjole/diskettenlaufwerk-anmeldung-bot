@@ -16,15 +16,14 @@ pub struct Participant {
     pub phone: Option<String>,
     pub email: Option<String>,
     pub status: Option<Status>,
-    pub matriculation_number: Option<String>,
-    pub business_phone: Option<String>,
+    pub status_related_info: Option<String>,
 }
 
 impl Participant {
-    pub async fn find_by_chat_id(pool: &Pool<Postgres>, chat_id: i64) -> Result<Participant> {
+    pub async fn find_by_chat_id(pool: &Pool<Postgres>, chat_id: i64) -> Result<Self> {
         let participant = sqlx::query_as!(Participant,
             r#"
-            SELECT chat_id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", matriculation_number, business_phone
+            SELECT chat_id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_related_info
             FROM participants
             WHERE chat_id = $1
             "#,
@@ -35,30 +34,29 @@ impl Participant {
         Ok(participant)
     }
 
-    pub async fn insert(self, pool: &Pool<Postgres>) -> Result<()> {
+    pub async fn insert(&self, pool: &Pool<Postgres>) -> Result<()> {
         sqlx::query!(
             r#"
-            INSERT INTO participants(chat_id, given_name, last_name, gender, street, city, phone, email, status, matriculation_number, business_phone)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            INSERT INTO participants(chat_id, given_name, last_name, gender, street, city, phone, email, status, status_related_info)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             "#,
             self.chat_id,
-            self.given_name.unwrap_or_default(),
-            self.last_name.unwrap_or_default(),
-            self.gender as Option<Gender>,
-            self.street.unwrap_or_default(),
-            self.city.unwrap_or_default(),
-            self.phone.unwrap_or_default(),
-            self.email.unwrap_or_default(),
-            self.status as Option<Status>,
-            self.matriculation_number.unwrap_or_default(),
-            self.business_phone.unwrap_or_default()
+            self.given_name.clone().unwrap_or_default(),
+            self.last_name.clone().unwrap_or_default(),
+            self.gender.clone() as Option<Gender>,
+            self.street.clone().unwrap_or_default(),
+            self.city.clone().unwrap_or_default(),
+            self.phone.clone().unwrap_or_default(),
+            self.email.clone().unwrap_or_default(),
+            self.status.clone() as Option<Status>,
+            self.status_related_info.clone().unwrap_or_default(),
         )
             .execute(pool)
             .await?;
         Ok(())
     }
 
-    pub async fn update(self, pool: &Pool<Postgres>) -> Result<()> {
+    pub async fn update(&self, pool: &Pool<Postgres>) -> Result<()> {
         sqlx::query!(
             r#"
             UPDATE participants
@@ -70,20 +68,18 @@ impl Participant {
                 phone = $6,
                 email = $7,
                 status = $8,
-                matriculation_number = $9,
-                business_phone = $10
-            WHERE chat_id = $11
+                status_related_info = $9
+            WHERE chat_id = $10
             "#,
-            self.given_name.unwrap_or_default(),
-            self.last_name.unwrap_or_default(),
-            self.gender as Option<Gender>,
-            self.street.unwrap_or_default(),
-            self.city.unwrap_or_default(),
-            self.phone.unwrap_or_default(),
-            self.email.unwrap_or_default(),
-            self.status as Option<Status>,
-            self.matriculation_number.unwrap_or_default(),
-            self.business_phone.unwrap_or_default(),
+            self.given_name.clone().unwrap_or_default(),
+            self.last_name.clone().unwrap_or_default(),
+            self.gender.clone() as Option<Gender>,
+            self.street.clone().unwrap_or_default(),
+            self.city.clone().unwrap_or_default(),
+            self.phone.clone().unwrap_or_default(),
+            self.email.clone().unwrap_or_default(),
+            self.status.clone() as Option<Status>,
+            self.status_related_info.clone().unwrap_or_default(),
             self.chat_id
         )
         .execute(pool)
@@ -91,7 +87,7 @@ impl Participant {
         Ok(())
     }
 
-    pub async fn delete(self, pool: &Pool<Postgres>) -> Result<()> {
+    pub async fn delete(&self, pool: &Pool<Postgres>) -> Result<()> {
         sqlx::query!(
             r#"DELETE FROM participants WHERE chat_id = $1"#,
             self.chat_id
@@ -122,35 +118,35 @@ impl Participant {
             ),
             (
                 "Matnr".into(),
-                self.matriculation_number.clone().unwrap_or_default(),
+                self.status_related_info.clone().unwrap_or_default(),
             ),
             (
                 "Institut".into(),
-                self.business_phone.clone().unwrap_or_default(),
+                self.status_related_info.clone().unwrap_or_default(),
             ),
             ("Mail".into(), self.email.clone().unwrap_or_default()),
             ("Tel".into(), self.phone.clone().unwrap_or_default()),
         ]
     }
 
-    fn status_related_info_name(&self) -> Option<String> {
+    pub fn is_student(&self) -> bool {
+        self.status
+            .clone()
+            .map_or(false, |status| status.is_student())
+    }
+
+    pub fn is_employed_at_cgn_uni_related_thing(&self) -> bool {
+        self.status.clone().map_or(false, |status| {
+            status.is_employed_at_cgn_uni_related_thing()
+        })
+    }
+
+    pub fn status_related_info_name(&self) -> Option<String> {
         self.status.clone().and_then(|status| {
             if status.is_student() {
                 Some(String::from("Matrikelnummer"))
             } else if status.is_employed_at_cgn_uni_related_thing() {
                 Some(String::from("Dienstliche Telefonnummer"))
-            } else {
-                None
-            }
-        })
-    }
-
-    fn status_related_info(&self) -> Option<String> {
-        self.status.clone().and_then(|status| {
-            if status.is_student() {
-                self.matriculation_number.clone()
-            } else if status.is_employed_at_cgn_uni_related_thing() {
-                self.business_phone.clone()
             } else {
                 None
             }
@@ -163,13 +159,15 @@ impl std::fmt::Display for Participant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            r#"Name: {} {}
-Geschlecht: {}
-Adresse: {}, {}
-Telefonnummer: {}
-E-Mail-Adresse: {}
-Status: {}
-{}: {} "#,
+            r#"Vorname {} (/edit_given_name)
+Nachname {} (/edit_last_name)
+Geschlecht {} (/edit_gender)
+Straße {} (/edit_street)
+Ort {} (/edit_city)
+Telefonnummer {} (/edit_phone)
+E-Mail-Adresse {} (/edit_email)
+Status {} (/edit_status)
+{}: {} (/edit_status_related_info)"#,
             self.given_name.clone().unwrap_or_default(),
             self.last_name.clone().unwrap_or_default(),
             self.gender.clone().map_or(String::new(), |g| g
@@ -185,7 +183,7 @@ Status: {}
                 .expect("Better add that enum prop")
                 .to_string()),
             self.status_related_info_name().unwrap_or_default(),
-            self.status_related_info().unwrap_or_default()
+            self.status_related_info.clone().unwrap_or_default()
         )
     }
 }
