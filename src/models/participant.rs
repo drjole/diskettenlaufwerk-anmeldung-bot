@@ -159,14 +159,14 @@ impl std::fmt::Display for Participant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            r#"Vorname {} (/edit_given_name)
-Nachname {} (/edit_last_name)
-Geschlecht {} (/edit_gender)
-Straße {} (/edit_street)
-Ort {} (/edit_city)
-Telefonnummer {} (/edit_phone)
-E-Mail-Adresse {} (/edit_email)
-Status {} (/edit_status)
+            r#"Vorname: {} (/edit_given_name)
+Nachname: {} (/edit_last_name)
+Geschlecht: {} (/edit_gender)
+Straße: {} (/edit_street)
+Ort: {} (/edit_city)
+Telefonnummer: {} (/edit_phone)
+E-Mail-Adresse: {} (/edit_email)
+Status: {} (/edit_status)
 {}: {} (/edit_status_related_info)"#,
             self.given_name.clone().unwrap_or_default(),
             self.last_name.clone().unwrap_or_default(),

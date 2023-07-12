@@ -4,7 +4,7 @@ use teloxide::prelude::*;
 use crate::{
     bot::{
         schema::{MyDialogue, State},
-        utils::{gender_keyboard, status_keyboard, update_dialogue},
+        utils::{dialogue_state, gender_keyboard, status_keyboard, update_dialogue},
     },
     models::{gender::Gender, participant::Participant, status::Status},
     Error,
@@ -21,7 +21,14 @@ pub async fn receive_gender(
     if let Some(Ok(gender)) = q.data.map(|text| text.parse::<Gender>()) {
         participant.gender = Some(gender);
         participant.update(&pool).await?;
-        update_dialogue(State::ReceiveStreet(true), bot, dialogue, &pool).await?;
+        let state = dialogue_state(&dialogue, &bot).await?;
+        if state.is_in_dialogue() {
+            update_dialogue(State::ReceiveStreet(true), bot, dialogue, &pool).await?;
+        } else {
+            bot.send_message(dialogue.chat_id(), "Geschlecht geändert.")
+                .await?;
+            dialogue.reset().await?;
+        }
     } else {
         let keyboard = gender_keyboard();
         bot.send_message(
@@ -45,7 +52,14 @@ pub async fn receive_status(
     if let Some(Ok(status)) = q.data.map(|text| text.parse::<Status>()) {
         participant.status = Some(status.clone());
         participant.update(&pool).await?;
-        update_dialogue(State::ReceiveStatusRelatedInfo(true), bot, dialogue, &pool).await?;
+        let state = dialogue_state(&dialogue, &bot).await?;
+        if state.is_in_dialogue() {
+            update_dialogue(State::ReceiveStatusRelatedInfo(true), bot, dialogue, &pool).await?;
+        } else {
+            bot.send_message(dialogue.chat_id(), "Status geändert.")
+                .await?;
+            update_dialogue(State::ReceiveStatusRelatedInfo(false), bot, dialogue, &pool).await?;
+        }
     } else {
         let keyboard = status_keyboard();
         bot.send_message(

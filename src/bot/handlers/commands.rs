@@ -60,6 +60,15 @@ pub async fn edit_last_name(
     Ok(())
 }
 
+pub async fn edit_gender(
+    bot: Bot,
+    dialogue: MyDialogue,
+    pool: Pool<Postgres>,
+) -> Result<(), Error> {
+    update_dialogue(State::ReceiveGender(false), bot, dialogue, &pool).await?;
+    Ok(())
+}
+
 pub async fn edit_street(
     bot: Bot,
     dialogue: MyDialogue,

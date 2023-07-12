@@ -26,18 +26,18 @@ pub enum State {
 }
 
 impl State {
-    pub fn is_in_dialogue(&self) -> bool {
+    pub const fn is_in_dialogue(&self) -> bool {
         *match self {
-            State::ReceiveGivenName(in_dialogue)
-            | State::ReceiveLastName(in_dialogue)
-            | State::ReceiveGender(in_dialogue)
-            | State::ReceiveStreet(in_dialogue)
-            | State::ReceiveCity(in_dialogue)
-            | State::ReceivePhone(in_dialogue)
-            | State::ReceiveEmail(in_dialogue)
-            | State::ReceiveStatus(in_dialogue)
-            | State::ReceiveStatusRelatedInfo(in_dialogue) => in_dialogue,
-            State::Start => &false,
+            Self::ReceiveGivenName(in_dialogue)
+            | Self::ReceiveLastName(in_dialogue)
+            | Self::ReceiveGender(in_dialogue)
+            | Self::ReceiveStreet(in_dialogue)
+            | Self::ReceiveCity(in_dialogue)
+            | Self::ReceivePhone(in_dialogue)
+            | Self::ReceiveEmail(in_dialogue)
+            | Self::ReceiveStatus(in_dialogue)
+            | Self::ReceiveStatusRelatedInfo(in_dialogue) => in_dialogue,
+            Self::Start => &false,
         }
     }
 }
@@ -92,6 +92,7 @@ fn schema() -> UpdateHandler<Error> {
         .branch(case![Command::ShowData].endpoint(handlers::show_data))
         .branch(case![Command::EditGivenName].endpoint(handlers::edit_given_name))
         .branch(case![Command::EditLastName].endpoint(handlers::edit_last_name))
+        .branch(case![Command::EditGender].endpoint(handlers::edit_gender))
         .branch(case![Command::EditStreet].endpoint(handlers::edit_street))
         .branch(case![Command::EditCity].endpoint(handlers::edit_city))
         .branch(case![Command::EditPhone].endpoint(handlers::edit_phone))

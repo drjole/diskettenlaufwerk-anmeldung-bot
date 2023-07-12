@@ -1,20 +1,19 @@
 use crate::bot::schema::{MyDialogue, State};
 use crate::models::participant::Participant;
 use crate::models::{gender::Gender, status::Status};
+use crate::Error;
 use color_eyre::eyre::Result;
-use color_eyre::Report;
 use sqlx::{Pool, Postgres};
 use strum::{EnumProperty, IntoEnumIterator};
 use teloxide::prelude::*;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
-pub async fn dialogue_state(dialogue: &MyDialogue, bot: &Bot) -> Result<State> {
-    match dialogue.get_or_default().await {
-        Ok(state) => Ok(state),
-        Err(err) => {
-            bot.send_message(dialogue.chat_id(), "Da ist etwas schief gelaufen. Mehr weiß ich leider auch nicht. Sag am besten Jonas Bescheid.").await?;
-        }
+pub async fn dialogue_state(dialogue: &MyDialogue, bot: &Bot) -> Result<State, Error> {
+    let state = dialogue.get().await?.ok_or("Dialogue has no state");
+    if state.is_err() {
+        bot.send_message(dialogue.chat_id(), "Da ist etwas schief gelaufen. Mehr weiß ich leider auch nicht. Sag am besten Jonas Bescheid.").await?;
     }
+    Ok(state?)
 }
 
 pub async fn update_dialogue(
@@ -30,7 +29,7 @@ pub async fn update_dialogue(
         State::ReceiveLastName(_) => "Bitte gib deinen Nachnamen ein.",
         State::ReceiveGender(_) => "Bitte wähle dein Geschlecht aus.",
         State::ReceiveStreet(_) => {
-            "Bitte gib deine Straße und Hausnummer ein.\n\nBeispiel: Musterstr. 123"
+            "Bitte gib deine Straße und deine Hausnummer ein.\n\nBeispiel: Musterstr. 123"
         }
         State::ReceiveCity(_) => {
             "Bitte gib deine Postleitzahl und deinen Ort ein.\n\nBeispiel: 50678 Köln"
@@ -77,9 +76,7 @@ pub async fn update_dialogue(
         }
     };
 
-    if new_state.is_in_dialogue() {
-        dialogue.update(new_state).await?;
-    };
+    dialogue.update(new_state).await?;
 
     Ok(())
 }

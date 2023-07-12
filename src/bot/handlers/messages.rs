@@ -21,7 +21,13 @@ pub async fn receive_given_name(
         Some(text) => {
             participant.given_name = Some(text.to_string());
             participant.update(&pool).await?;
-            update_dialogue(State::ReceiveLastName(true), bot, dialogue, &pool).await?;
+            let state = dialogue_state(&dialogue, &bot).await?;
+            if state.is_in_dialogue() {
+                update_dialogue(State::ReceiveLastName(true), bot, dialogue, &pool).await?;
+            } else {
+                bot.send_message(msg.chat.id, "Vorname geändert.").await?;
+                dialogue.reset().await?;
+            }
         }
         None => {
             bot.send_message(
@@ -45,7 +51,13 @@ pub async fn receive_last_name(
         Some(text) => {
             participant.last_name = Some(text.to_string());
             participant.update(&pool).await?;
-            update_dialogue(State::ReceiveGender(true), bot, dialogue, &pool).await?;
+            let state = dialogue_state(&dialogue, &bot).await?;
+            if state.is_in_dialogue() {
+                update_dialogue(State::ReceiveGender(true), bot, dialogue, &pool).await?;
+            } else {
+                bot.send_message(msg.chat.id, "Nachname geändert.").await?;
+                dialogue.reset().await?;
+            }
         }
         None => {
             bot.send_message(
@@ -69,10 +81,17 @@ pub async fn receive_street(
         Some(text) => {
             participant.street = Some(text.to_string());
             participant.update(&pool).await?;
-            update_dialogue(State::ReceiveCity(true), bot, dialogue, &pool).await?;
+            let state = dialogue_state(&dialogue, &bot).await?;
+            if state.is_in_dialogue() {
+                update_dialogue(State::ReceiveCity(true), bot, dialogue, &pool).await?;
+            } else {
+                bot.send_message(msg.chat.id, "Straße und Hausnummer geändert.")
+                    .await?;
+                dialogue.reset().await?;
+            }
         }
         None => {
-            bot.send_message(msg.chat.id, "Das habe ich nicht verstanden. Bitte gib deine Straße und Hausnummer ein. Z.B. Musterstr. 123")
+            bot.send_message(msg.chat.id, "Das habe ich nicht verstanden. Bitte gib deine Straße und deine Hausnummer ein. Beispiel: Musterstr. 123")
                 .await?;
         }
     }
@@ -90,10 +109,17 @@ pub async fn receive_city(
         Some(text) => {
             participant.city = Some(text.to_string());
             participant.update(&pool).await?;
-            update_dialogue(State::ReceivePhone(true), bot, dialogue, &pool).await?;
+            let state = dialogue_state(&dialogue, &bot).await?;
+            if state.is_in_dialogue() {
+                update_dialogue(State::ReceivePhone(true), bot, dialogue, &pool).await?;
+            } else {
+                bot.send_message(msg.chat.id, "Postleitzahl und Ort geändert.")
+                    .await?;
+                dialogue.reset().await?;
+            }
         }
         None => {
-            bot.send_message(msg.chat.id, "Das habe ich nicht verstanden. Bitte gib deine Postleitzahl und deinen Wohnort ein. Z.B. 50678 Köln")
+            bot.send_message(msg.chat.id, "Das habe ich nicht verstanden. Bitte gib deine Postleitzahl und deinen Ort ein.\n\nBeispiel: 50678 Köln")
                 .await?;
         }
     }
@@ -111,7 +137,14 @@ pub async fn receive_phone(
         Some(text) => {
             participant.phone = Some(text.to_string());
             participant.update(&pool).await?;
-            update_dialogue(State::ReceiveEmail(true), bot, dialogue, &pool).await?;
+            let state = dialogue_state(&dialogue, &bot).await?;
+            if state.is_in_dialogue() {
+                update_dialogue(State::ReceiveEmail(true), bot, dialogue, &pool).await?;
+            } else {
+                bot.send_message(msg.chat.id, "Telefonnummer geändert.")
+                    .await?;
+                dialogue.reset().await?;
+            }
         }
         None => {
             bot.send_message(
@@ -135,7 +168,14 @@ pub async fn receive_email(
         Some(text) => {
             participant.email = Some(text.to_string());
             participant.update(&pool).await?;
-            update_dialogue(State::ReceiveStatus(true), bot, dialogue, &pool).await?;
+            let state = dialogue_state(&dialogue, &bot).await?;
+            if state.is_in_dialogue() {
+                update_dialogue(State::ReceiveStatus(true), bot, dialogue, &pool).await?;
+            } else {
+                bot.send_message(msg.chat.id, "E-Mail-Adresse geändert.")
+                    .await?;
+                dialogue.reset().await?;
+            }
         }
         None => {
             bot.send_message(
@@ -155,6 +195,7 @@ pub async fn receive_status_related_info(
     pool: Pool<Postgres>,
 ) -> Result<(), Error> {
     let mut participant = Participant::find_by_chat_id(&pool, msg.chat.id.0).await?;
+    let status_related_info_name = participant.status_related_info_name().unwrap_or_default();
     let state = dialogue_state(&dialogue, &bot).await?;
     match msg.text() {
         Some(text) => {
@@ -170,10 +211,7 @@ Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antwort
             } else {
                 bot.send_message(
                     msg.chat.id,
-                    format!(
-                        "{} geändert.",
-                        participant.status_related_info_name().unwrap_or_default()
-                    ),
+                    format!("{status_related_info_name} geändert.",),
                 )
                 .await?;
             }
@@ -182,8 +220,7 @@ Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antwort
             bot.send_message(
                 msg.chat.id,
                 format!(
-                    "Das habe ich nicht verstanden. Bitte gib deine {} ein.",
-                    participant.status_related_info_name().unwrap_or_default()
+                    "Das habe ich nicht verstanden. Bitte gib deine {status_related_info_name} ein.",
                 ),
             )
             .await?;
