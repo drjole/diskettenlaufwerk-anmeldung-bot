@@ -1,13 +1,14 @@
-use crate::{http::request_document, Error, HandlerResult};
+use crate::{http::request_document, Error};
+use color_eyre::Result;
 use encoding::{all::ISO_8859_1, Encoding};
 use form_urlencoded::byte_serialize;
 use reqwest::RequestBuilder;
 use scraper::{ElementRef, Html};
 
-const FORM_URL: &str = "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi?Kursid=245802";
+const FORM_URL: &str = "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi?Kursid=259317";
 const SIGNUP_URL: &str = "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi";
 
-async fn signup() -> HandlerResult {
+async fn signup() -> Result<()> {
     let client = reqwest::Client::new();
 
     // Step 1: Get the signup page that contains session specific data

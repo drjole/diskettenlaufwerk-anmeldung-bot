@@ -7,7 +7,7 @@ use crate::{
         utils::{dialogue_state, update_dialogue},
     },
     models::participant::Participant,
-    Error,
+    types::Error,
 };
 
 pub async fn receive_given_name(

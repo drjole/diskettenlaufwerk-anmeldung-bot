@@ -1,14 +1,10 @@
-mod bot;
-mod models;
-
 extern crate encoding;
 
-use color_eyre::eyre::Result;
+use color_eyre::Result;
+use common::bot;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
-
-pub type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 #[tokio::main]
 async fn main() -> Result<()> {

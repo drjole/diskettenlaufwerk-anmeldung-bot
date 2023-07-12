@@ -1,8 +1,8 @@
 use crate::bot::schema::{MyDialogue, State};
 use crate::models::participant::Participant;
 use crate::models::{gender::Gender, status::Status};
-use crate::Error;
-use color_eyre::eyre::Result;
+use crate::types::Error;
+use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use strum::{EnumProperty, IntoEnumIterator};
 use teloxide::prelude::*;

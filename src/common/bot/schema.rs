@@ -1,4 +1,4 @@
-use color_eyre::eyre::Result;
+use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{
     dispatching::{dialogue, dialogue::InMemStorage, UpdateHandler},
@@ -6,7 +6,7 @@ use teloxide::{
     utils::command::BotCommands,
 };
 
-use crate::{bot::handlers, Error};
+use crate::{bot::handlers, types::Error};
 
 pub type MyDialogue = Dialogue<State, InMemStorage<State>>;
 

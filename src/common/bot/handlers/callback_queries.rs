@@ -7,7 +7,7 @@ use crate::{
         utils::{dialogue_state, gender_keyboard, status_keyboard, update_dialogue},
     },
     models::{gender::Gender, participant::Participant, status::Status},
-    Error,
+    types::Error,
 };
 
 pub async fn receive_gender(

@@ -1,4 +1,4 @@
-use color_eyre::eyre::Result;
+use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use strum::EnumProperty;
 
@@ -20,6 +20,15 @@ pub struct Participant {
 }
 
 impl Participant {
+    pub async fn all(pool: &Pool<Postgres>) -> Result<Vec<Self>> {
+        let participants = sqlx::query_as!(Participant,
+        r#"
+        SELECT chat_id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_related_info
+        FROM participants
+        "#).fetch_all(pool).await?;
+        Ok(participants)
+    }
+
     pub async fn find_by_chat_id(pool: &Pool<Postgres>, chat_id: i64) -> Result<Self> {
         let participant = sqlx::query_as!(Participant,
             r#"

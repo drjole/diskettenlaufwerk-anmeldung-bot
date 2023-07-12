@@ -1,4 +1,4 @@
-CREATE TYPE status AS ENUM (
+CREATE TYPE participant_status AS ENUM (
     'StudentUniKoeln',
     'StudentDSHSKoeln',
     'StudentTHKoeln',
@@ -15,4 +15,4 @@ CREATE TYPE status AS ENUM (
     'AzubiUniKlinik',
     'AzubiKoelnerStudierendenwerk',
     'Gast'
-)
+);

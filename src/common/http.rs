@@ -1,8 +1,8 @@
-use crate::Error;
+use color_eyre::Result;
 use reqwest::RequestBuilder;
 use scraper::Html;
 
-async fn request_document(builder: RequestBuilder) -> Result<Html, Error> {
+pub async fn request_document(builder: RequestBuilder) -> Result<Html> {
     let response = builder.send().await?;
     std::thread::sleep(std::time::Duration::from_secs(3));
     let text = response.text().await?;

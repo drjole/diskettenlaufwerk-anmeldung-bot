@@ -7,6 +7,6 @@ CREATE TABLE participants (
     city text default null,
     phone text default null,
     email text default null,
-    status status default null,
+    status participant_status default null,
     status_related_info text default null
 );

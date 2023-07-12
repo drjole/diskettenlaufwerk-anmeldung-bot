@@ -7,7 +7,7 @@ use crate::{
         utils::update_dialogue,
     },
     models::participant::Participant,
-    Error,
+    types::Error,
 };
 
 pub async fn enter_data(
@@ -16,14 +16,13 @@ pub async fn enter_data(
     msg: Message,
     pool: Pool<Postgres>,
 ) -> Result<(), Error> {
-    if let Ok(participant) = Participant::find_by_chat_id(&pool, msg.chat.id.0).await {
-        participant.delete(&pool).await?;
+    if (Participant::find_by_chat_id(&pool, msg.chat.id.0).await).is_err() {
+        let participant = Participant {
+            chat_id: msg.chat.id.0,
+            ..Default::default()
+        };
+        participant.insert(&pool).await?;
     }
-    let participant = Participant {
-        chat_id: msg.chat.id.0,
-        ..Default::default()
-    };
-    participant.insert(&pool).await?;
     update_dialogue(State::ReceiveGivenName(true), bot, dialogue, &pool).await?;
     Ok(())
 }

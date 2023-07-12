@@ -1,7 +1,7 @@
 use strum::{Display, EnumIter, EnumProperty, EnumString};
 
 #[derive(Clone, Debug, Display, EnumString, EnumProperty, EnumIter, sqlx::Type)]
-#[sqlx(type_name = "status")]
+#[sqlx(type_name = "participant_status")]
 pub enum Status {
     #[strum(props(pretty = "Stud. Uni Köln"))]
     StudentUniKoeln,

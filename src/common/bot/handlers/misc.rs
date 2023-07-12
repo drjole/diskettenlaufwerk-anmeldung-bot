@@ -1,6 +1,6 @@
 use teloxide::prelude::*;
 
-use crate::Error;
+use crate::types::Error;
 
 pub async fn invalid(bot: Bot, msg: Message) -> Result<(), Error> {
     bot.send_message(msg.chat.id, "Diese Nachricht konnte ich nicht verarbeiten.")
