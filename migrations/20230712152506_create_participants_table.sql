@@ -1,5 +1,5 @@
 CREATE TABLE participants (
-    chat_id bigint primary key,
+    id bigint primary key,
     given_name text default null,
     last_name text default null,
     gender gender default null,

@@ -1,13 +1,11 @@
+use crate::models::{course::Course, gender::Gender, signup::SignupStatus, status::Status};
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use strum::EnumProperty;
 
-use crate::models::gender::Gender;
-use crate::models::status::Status;
-
 #[derive(Debug, Default)]
 pub struct Participant {
-    pub chat_id: i64,
+    pub id: i64,
     pub given_name: Option<String>,
     pub last_name: Option<String>,
     pub gender: Option<Gender>,
@@ -20,36 +18,13 @@ pub struct Participant {
 }
 
 impl Participant {
-    pub async fn all(pool: &Pool<Postgres>) -> Result<Vec<Self>> {
-        let participants = sqlx::query_as!(Participant,
-        r#"
-        SELECT chat_id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_related_info
-        FROM participants
-        "#).fetch_all(pool).await?;
-        Ok(participants)
-    }
-
-    pub async fn find_by_chat_id(pool: &Pool<Postgres>, chat_id: i64) -> Result<Self> {
-        let participant = sqlx::query_as!(Participant,
-            r#"
-            SELECT chat_id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_related_info
-            FROM participants
-            WHERE chat_id = $1
-            "#,
-            chat_id,
-        )
-        .fetch_one(pool)
-        .await?;
-        Ok(participant)
-    }
-
-    pub async fn insert(&self, pool: &Pool<Postgres>) -> Result<()> {
+    pub async fn create(&self, pool: &Pool<Postgres>) -> Result<()> {
         sqlx::query!(
             r#"
-            INSERT INTO participants(chat_id, given_name, last_name, gender, street, city, phone, email, status, status_related_info)
+            INSERT INTO participants(id, given_name, last_name, gender, street, city, phone, email, status, status_related_info)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             "#,
-            self.chat_id,
+            self.id,
             self.given_name.clone().unwrap_or_default(),
             self.last_name.clone().unwrap_or_default(),
             self.gender.clone() as Option<Gender>,
@@ -65,6 +40,46 @@ impl Participant {
         Ok(())
     }
 
+    pub async fn all(pool: &Pool<Postgres>) -> Result<Vec<Self>> {
+        let participants = sqlx::query_as!(Participant,
+        r#"
+        SELECT id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_related_info
+        FROM participants
+        "#).fetch_all(pool).await?;
+        Ok(participants)
+    }
+
+    pub async fn find_by_id(pool: &Pool<Postgres>, id: i64) -> Result<Self> {
+        let participant = sqlx::query_as!(Participant,
+            r#"
+            SELECT id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_related_info
+            FROM participants
+            WHERE id = $1
+            "#,
+            id,
+        )
+        .fetch_one(pool)
+        .await?;
+        Ok(participant)
+    }
+
+    pub async fn uninformed(course: &Course, pool: &Pool<Postgres>) -> Result<Vec<Self>> {
+        let participants = sqlx::query_as!(
+            Participant,
+            r#"
+            SELECT id, given_name, last_name, gender as "gender: _", street, city, phone, email, participants.status as "status: _", status_related_info
+            FROM participants
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM signups
+                WHERE participants.id = signups.participant_id AND signups.course_id = $1
+            )
+            "#,
+            course.id,
+        ).fetch_all(pool).await?;
+        Ok(participants)
+    }
+
     pub async fn update(&self, pool: &Pool<Postgres>) -> Result<()> {
         sqlx::query!(
             r#"
@@ -78,7 +93,7 @@ impl Participant {
                 email = $7,
                 status = $8,
                 status_related_info = $9
-            WHERE chat_id = $10
+            WHERE id = $10
             "#,
             self.given_name.clone().unwrap_or_default(),
             self.last_name.clone().unwrap_or_default(),
@@ -89,7 +104,28 @@ impl Participant {
             self.email.clone().unwrap_or_default(),
             self.status.clone() as Option<Status>,
             self.status_related_info.clone().unwrap_or_default(),
-            self.chat_id
+            self.id
+        )
+        .execute(pool)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn set_signup_status(
+        &self,
+        pool: &Pool<Postgres>,
+        course_id: i64,
+        status: SignupStatus,
+    ) -> Result<()> {
+        sqlx::query!(
+            r#"
+            UPDATE signups
+            SET status = $1
+            WHERE participant_id = $2 AND course_id = $3
+            "#,
+            status as SignupStatus,
+            self.id,
+            course_id
         )
         .execute(pool)
         .await?;
@@ -97,20 +133,19 @@ impl Participant {
     }
 
     pub async fn delete(&self, pool: &Pool<Postgres>) -> Result<()> {
-        sqlx::query!(
-            r#"DELETE FROM participants WHERE chat_id = $1"#,
-            self.chat_id
-        )
-        .execute(pool)
-        .await?;
+        sqlx::query!(r#"DELETE FROM participants WHERE id = $1"#, self.id)
+            .execute(pool)
+            .await?;
         Ok(())
     }
 
-    fn as_payload(&self) -> Vec<(String, String)> {
+    pub fn as_payload(&self) -> Vec<(String, String)> {
         vec![
             (
                 "Geschlecht".into(),
-                self.gender.clone().map_or(String::new(), |g| g.to_string()),
+                self.gender
+                    .clone()
+                    .map_or(String::new(), |g| g.as_payload().to_string()),
             ),
             (
                 "Vorname".into(),
@@ -164,7 +199,6 @@ impl Participant {
 }
 
 impl std::fmt::Display for Participant {
-    #[allow(clippy::expect_used)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -181,7 +215,7 @@ Status: {} (/edit_status)
             self.last_name.clone().unwrap_or_default(),
             self.gender.clone().map_or(String::new(), |g| g
                 .get_str("pretty")
-                .expect("Better add that enum prop")
+                .unwrap_or_else(|| panic!("Better set that enum prop"))
                 .to_string()),
             self.street.clone().unwrap_or_default(),
             self.city.clone().unwrap_or_default(),
@@ -189,7 +223,7 @@ Status: {} (/edit_status)
             self.email.clone().unwrap_or_default(),
             self.status.clone().map_or(String::new(), |s| s
                 .get_str("pretty")
-                .expect("Better add that enum prop")
+                .unwrap_or_else(|| panic!("Better set that enum prop"))
                 .to_string()),
             self.status_related_info_name().unwrap_or_default(),
             self.status_related_info.clone().unwrap_or_default()

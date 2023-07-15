@@ -1,6 +1,7 @@
-use chrono::{DateTime, TimeZone};
-use chrono_tz::{Europe::Berlin, Tz};
+use chrono::{NaiveDateTime, TimeZone};
+use chrono_tz::Europe::Berlin;
 use color_eyre::{eyre::eyre, Result};
+use sqlx::{Pool, Postgres};
 use std::{collections::HashMap, fmt::Display};
 use url::Url;
 
@@ -9,16 +10,67 @@ use crate::http::request_document;
 #[derive(Debug)]
 pub struct Course {
     pub id: i64,
-    pub url: Url,
-    pub start_time: DateTime<Tz>,
-    pub end_time: DateTime<Tz>,
+    pub start_time: NaiveDateTime,
+    pub end_time: NaiveDateTime,
     pub level: String,
     pub location: String,
     pub trainer: String,
 }
 
 impl Course {
-    pub async fn download() -> Result<Vec<Self>> {
+    pub async fn fetch(pool: &Pool<Postgres>) -> Result<()> {
+        let courses = Self::download().await?;
+        if courses.is_empty() {
+            return Ok(());
+        }
+        for course in &courses {
+            if !course.exists(pool).await? {
+                course.insert(pool).await?;
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn today(pool: &Pool<Postgres>) -> Result<Self> {
+        let course = sqlx::query_as!(
+            Course,
+            r#"
+            SELECT id, start_time, end_time, level, location, trainer
+            FROM courses
+            WHERE date(start_time) = current_date
+            "#
+        )
+        .fetch_one(pool)
+        .await?;
+        Ok(course)
+    }
+
+    pub async fn insert(&self, pool: &Pool<Postgres>) -> Result<()> {
+        sqlx::query!(
+            r#"
+            INSERT INTO courses (id, start_time, end_time, level, location, trainer)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            "#,
+            self.id,
+            self.start_time,
+            self.end_time,
+            self.level,
+            self.location,
+            self.trainer
+        )
+        .execute(pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn exists(&self, pool: &Pool<Postgres>) -> Result<bool> {
+        let record = sqlx::query!(r#"SELECT id FROM courses WHERE id = $1 LIMIT 1"#, self.id)
+            .fetch_optional(pool)
+            .await?;
+        Ok(record.is_some())
+    }
+
+    async fn download() -> Result<Vec<Self>> {
         const COURSES_URL: &str =
             "https://unisport.koeln/e65/e41657/e41692/k_content41702/publicGetData";
         let client = reqwest::Client::new();
@@ -38,11 +90,15 @@ impl Course {
             .map(|(i, e)| (e.text().collect(), i))
             .collect();
 
+        if table_headers.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let mut courses = vec![];
+
         let url_column = table_headers
             .get("Anmeldung")
             .ok_or_else(|| eyre!("Header 'Anmeldung' is missing"))?;
-
-        let mut courses = vec![];
 
         for table_row in document.select(&table_body_rows_selector) {
             let table_cells: Result<HashMap<usize, String>> = table_row
@@ -98,12 +154,15 @@ impl Course {
                 .get("Kursid")
                 .ok_or_else(|| eyre!("'Kursid' missing in URL"))?;
             let id: i64 = id_string.parse()?;
-            let start_time = Berlin.datetime_from_str(
-                &format!("{date} {start_time_of_day}:00"),
-                "%d.%m.%Y %H:%M:%S",
-            )?;
+            let start_time = Berlin
+                .datetime_from_str(
+                    &format!("{date} {start_time_of_day}:00"),
+                    "%d.%m.%Y %H:%M:%S",
+                )?
+                .naive_utc();
             let end_time = Berlin
-                .datetime_from_str(&format!("{date} {end_time_of_day}:00"), "%d.%m.%Y %H:%M:%S")?;
+                .datetime_from_str(&format!("{date} {end_time_of_day}:00"), "%d.%m.%Y %H:%M:%S")?
+                .naive_utc();
             let level = table_cells[table_headers
                 .get("Bezeichnung")
                 .ok_or_else(|| eyre!("Header 'Bezeichnung' is missing"))?]
@@ -119,7 +178,6 @@ impl Course {
 
             let course = Self {
                 id,
-                url,
                 start_time,
                 end_time,
                 level,
@@ -136,8 +194,16 @@ impl Display for Course {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}\n{}\n{}\n{}\n{}\n{}",
-            self.url, self.start_time, self.end_time, self.level, self.location, self.trainer
+            r#"Von: {}
+Bis: {}
+Bezeichnung: {}
+Ort: {}
+Kursleiter/In: {}"#,
+            self.start_time.format("%H:%M"),
+            self.end_time.format("%H:%M"),
+            self.level,
+            self.location,
+            self.trainer
         )
     }
 }

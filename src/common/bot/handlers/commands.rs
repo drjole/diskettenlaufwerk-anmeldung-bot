@@ -3,8 +3,8 @@ use teloxide::prelude::*;
 
 use crate::{
     bot::{
+        dialogue::update_dialogue,
         schema::{MyDialogue, State},
-        utils::update_dialogue,
     },
     models::participant::Participant,
     types::Error,
@@ -16,19 +16,19 @@ pub async fn enter_data(
     msg: Message,
     pool: Pool<Postgres>,
 ) -> Result<(), Error> {
-    if (Participant::find_by_chat_id(&pool, msg.chat.id.0).await).is_err() {
+    if (Participant::find_by_id(&pool, msg.chat.id.0).await).is_err() {
         let participant = Participant {
-            chat_id: msg.chat.id.0,
+            id: msg.chat.id.0,
             ..Default::default()
         };
-        participant.insert(&pool).await?;
+        participant.create(&pool).await?;
     }
     update_dialogue(State::ReceiveGivenName(true), bot, dialogue, &pool).await?;
     Ok(())
 }
 
 pub async fn show_data(bot: Bot, msg: Message, pool: Pool<Postgres>) -> Result<(), Error> {
-    let participant = Participant::find_by_chat_id(&pool, msg.chat.id.0).await?;
+    let participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     bot.send_message(
         msg.chat.id,
         format!(

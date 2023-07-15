@@ -1,12 +1,13 @@
-use crate::bot::schema::{MyDialogue, State};
-use crate::models::participant::Participant;
-use crate::models::{gender::Gender, status::Status};
-use crate::types::Error;
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
-use strum::{EnumProperty, IntoEnumIterator};
 use teloxide::prelude::*;
-use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
+
+use crate::bot::{
+    keyboards::{gender_keyboard, status_keyboard},
+    schema::{MyDialogue, State},
+};
+use crate::models::participant::Participant;
+use crate::types::Error;
 
 pub async fn dialogue_state(dialogue: &MyDialogue, bot: &Bot) -> Result<State, Error> {
     let state = dialogue.get().await?.ok_or("Dialogue has no state");
@@ -22,7 +23,7 @@ pub async fn update_dialogue(
     dialogue: MyDialogue,
     pool: &Pool<Postgres>,
 ) -> Result<()> {
-    let participant = Participant::find_by_chat_id(pool, dialogue.chat_id().0).await?;
+    let participant = Participant::find_by_id(pool, dialogue.chat_id().0).await?;
     let message = match new_state {
         State::Start => "",
         State::ReceiveGivenName(_) => "Bitte gib deinen Vornamen ein.",
@@ -79,36 +80,4 @@ pub async fn update_dialogue(
     dialogue.update(new_state).await?;
 
     Ok(())
-}
-
-pub fn gender_keyboard() -> InlineKeyboardMarkup {
-    let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
-
-    #[allow(clippy::expect_used)]
-    let row = Gender::iter()
-        .map(|gender| {
-            InlineKeyboardButton::callback(
-                gender.get_str("pretty").expect("Better add that enum prop"),
-                gender.to_string(),
-            )
-        })
-        .collect();
-    keyboard.push(row);
-
-    InlineKeyboardMarkup::new(keyboard)
-}
-
-pub fn status_keyboard() -> InlineKeyboardMarkup {
-    let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
-
-    for status in Status::iter().rev() {
-        #[allow(clippy::expect_used)]
-        let row = vec![InlineKeyboardButton::callback(
-            status.get_str("pretty").expect("Better add that enum prop"),
-            status.to_string(),
-        )];
-        keyboard.push(row);
-    }
-
-    InlineKeyboardMarkup::new(keyboard)
 }
