@@ -2,10 +2,12 @@ version: "3"
 
 services:
   bot:
+    image: ghcr.io/drjole/diskettenlaufwerk-anmeldung-bot-bot:latest
     extends:
       file: docker-compose.yml
       service: bot
   scraper:
+    image: ghcr.io/drjole/diskettenlaufwerk-anmeldung-bot-scraper:latest
     extends:
       file: docker-compose.yml
       service: scraper
