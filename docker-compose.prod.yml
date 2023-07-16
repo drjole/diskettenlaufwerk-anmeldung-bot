@@ -1,0 +1,15 @@
+version: "3"
+
+services:
+  bot:
+    extends:
+      file: docker-compose.yml
+      service: bot
+  scraper:
+    extends:
+      file: docker-compose.yml
+      service: scraper
+  db:
+    extends:
+      file: docker-compose.yml
+      service: db

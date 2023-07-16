@@ -1,11 +1,10 @@
+use crate::http::request_document;
 use chrono::{NaiveDateTime, TimeZone};
 use chrono_tz::Europe::Berlin;
 use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use std::{collections::HashMap, fmt::Display};
 use url::Url;
-
-use crate::http::request_document;
 
 #[derive(Debug)]
 pub struct Course {
@@ -18,34 +17,7 @@ pub struct Course {
 }
 
 impl Course {
-    pub async fn fetch(pool: &Pool<Postgres>) -> Result<()> {
-        let courses = Self::download().await?;
-        if courses.is_empty() {
-            return Ok(());
-        }
-        for course in &courses {
-            if !course.exists(pool).await? {
-                course.insert(pool).await?;
-            }
-        }
-        Ok(())
-    }
-
-    pub async fn today(pool: &Pool<Postgres>) -> Result<Self> {
-        let course = sqlx::query_as!(
-            Course,
-            r#"
-            SELECT id, start_time, end_time, level, location, trainer
-            FROM courses
-            WHERE date(start_time) = current_date
-            "#
-        )
-        .fetch_one(pool)
-        .await?;
-        Ok(course)
-    }
-
-    pub async fn insert(&self, pool: &Pool<Postgres>) -> Result<()> {
+    pub async fn create(&self, pool: &Pool<Postgres>) -> Result<()> {
         sqlx::query!(
             r#"
             INSERT INTO courses (id, start_time, end_time, level, location, trainer)
@@ -60,6 +32,38 @@ impl Course {
         )
         .execute(pool)
         .await?;
+        Ok(())
+    }
+
+    pub async fn today(pool: &Pool<Postgres>) -> Result<Option<Self>> {
+        let course = sqlx::query_as!(
+            Course,
+            r#"
+            SELECT id, start_time, end_time, level, location, trainer
+            FROM courses
+            WHERE date(start_time) = current_date
+            "#
+        )
+        .fetch_optional(pool)
+        .await?;
+        Ok(course)
+    }
+
+    pub async fn fetch(pool: &Pool<Postgres>) -> Result<()> {
+        log::info!("fetching courses");
+        let courses = Self::download().await?;
+        if courses.is_empty() {
+            log::info!("no courses found");
+            return Ok(());
+        }
+        for course in &courses {
+            if course.exists(pool).await? {
+                log::info!("course {} already exists", course.id);
+            } else {
+                log::info!("inserting new course {}", course.id);
+                course.create(pool).await?;
+            }
+        }
         Ok(())
     }
 

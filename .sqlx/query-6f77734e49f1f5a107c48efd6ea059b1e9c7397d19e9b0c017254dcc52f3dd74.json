@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE signups\n            SET status = $1\n            WHERE participant_id = $2 AND course_id = $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "signup_status",
+            "kind": {
+              "Enum": [
+                "Uninformed",
+                "Notified",
+                "SignedUp",
+                "Rejected"
+              ]
+            }
+          }
+        },
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6f77734e49f1f5a107c48efd6ea059b1e9c7397d19e9b0c017254dcc52f3dd74"
+}

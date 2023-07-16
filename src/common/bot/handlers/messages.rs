@@ -1,21 +1,21 @@
-use sqlx::{Pool, Postgres};
-use teloxide::prelude::*;
-
 use crate::{
     bot::{
         dialogue::{dialogue_state, update_dialogue},
         schema::{MyDialogue, State},
     },
     models::participant::Participant,
-    types::Error,
 };
+use color_eyre::Result;
+use sqlx::{Pool, Postgres};
+use teloxide::prelude::*;
 
 pub async fn receive_given_name(
     bot: Bot,
     dialogue: MyDialogue,
     msg: Message,
     pool: Pool<Postgres>,
-) -> Result<(), Error> {
+) -> Result<()> {
+    log::info!("receive_given_name by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     match msg.text() {
         Some(text) => {
@@ -45,7 +45,8 @@ pub async fn receive_last_name(
     dialogue: MyDialogue,
     msg: Message,
     pool: Pool<Postgres>,
-) -> Result<(), Error> {
+) -> Result<()> {
+    log::info!("receive_last_name by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     match msg.text() {
         Some(text) => {
@@ -75,7 +76,8 @@ pub async fn receive_street(
     dialogue: MyDialogue,
     msg: Message,
     pool: Pool<Postgres>,
-) -> Result<(), Error> {
+) -> Result<()> {
+    log::info!("receive_street by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     match msg.text() {
         Some(text) => {
@@ -103,7 +105,8 @@ pub async fn receive_city(
     dialogue: MyDialogue,
     msg: Message,
     pool: Pool<Postgres>,
-) -> Result<(), Error> {
+) -> Result<()> {
+    log::info!("receive_city by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     match msg.text() {
         Some(text) => {
@@ -131,7 +134,8 @@ pub async fn receive_phone(
     dialogue: MyDialogue,
     msg: Message,
     pool: Pool<Postgres>,
-) -> Result<(), Error> {
+) -> Result<()> {
+    log::info!("receive_phone by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     match msg.text() {
         Some(text) => {
@@ -162,7 +166,8 @@ pub async fn receive_email(
     dialogue: MyDialogue,
     msg: Message,
     pool: Pool<Postgres>,
-) -> Result<(), Error> {
+) -> Result<()> {
+    log::info!("receive_email by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     match msg.text() {
         Some(text) => {
@@ -193,7 +198,8 @@ pub async fn receive_status_related_info(
     msg: Message,
     dialogue: MyDialogue,
     pool: Pool<Postgres>,
-) -> Result<(), Error> {
+) -> Result<()> {
+    log::info!("receive_status_related_info by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     let status_related_info_name = participant.status_related_info_name().unwrap_or_default();
     let state = dialogue_state(&dialogue, &bot).await?;

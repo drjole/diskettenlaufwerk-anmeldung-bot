@@ -1,20 +1,20 @@
-use color_eyre::Result;
+use crate::{
+    bot::{
+        keyboards::{gender_keyboard, status_keyboard},
+        schema::{MyDialogue, State},
+    },
+    models::participant::Participant,
+};
+use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use teloxide::prelude::*;
 
-use crate::bot::{
-    keyboards::{gender_keyboard, status_keyboard},
-    schema::{MyDialogue, State},
-};
-use crate::models::participant::Participant;
-use crate::types::Error;
-
-pub async fn dialogue_state(dialogue: &MyDialogue, bot: &Bot) -> Result<State, Error> {
+pub async fn dialogue_state(dialogue: &MyDialogue, bot: &Bot) -> Result<State> {
     let state = dialogue.get().await?.ok_or("Dialogue has no state");
     if state.is_err() {
         bot.send_message(dialogue.chat_id(), "Da ist etwas schief gelaufen. Mehr weiß ich leider auch nicht. Sag am besten Jonas Bescheid.").await?;
     }
-    Ok(state?)
+    state.map_err(|e| eyre!("{e}"))
 }
 
 pub async fn update_dialogue(

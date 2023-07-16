@@ -63,14 +63,17 @@ pub async fn signup(participant: &Participant, course_id: i64) -> Result<()> {
     request = add_headers(request);
     let document = request_document(request).await?;
 
-    dbg!(document);
+    println!("{document:?}");
 
     Ok(())
 }
 
 async fn parse_form(document: &Html) -> Result<ElementRef> {
-    let form_selector = scraper::Selector::parse("form").unwrap();
-    let form_element = document.select(&form_selector).next().unwrap();
+    let form_selector = scraper::Selector::parse("form").map_err(|e| eyre!("{e}"))?;
+    let form_element = document
+        .select(&form_selector)
+        .next()
+        .ok_or_else(|| eyre!("form element not found"))?;
     Ok(form_element)
 }
 

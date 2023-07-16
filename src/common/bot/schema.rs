@@ -1,3 +1,4 @@
+use crate::bot::handlers;
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{
@@ -6,9 +7,8 @@ use teloxide::{
     utils::command::BotCommands,
 };
 
-use crate::{bot::handlers, types::Error};
-
 pub type MyDialogue = Dialogue<State, InMemStorage<State>>;
+pub type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 #[derive(Clone, Default)]
 pub enum State {
@@ -84,7 +84,7 @@ pub async fn start(pool: Pool<Postgres>) -> Result<()> {
     Ok(())
 }
 
-fn schema() -> UpdateHandler<Error> {
+fn schema() -> UpdateHandler<color_eyre::Report> {
     use dptree::case;
 
     let command_handler = teloxide::filter_command::<Command, _>()
