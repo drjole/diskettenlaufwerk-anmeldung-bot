@@ -5,7 +5,7 @@ use crate::{
     },
     models::participant::Participant,
 };
-use color_eyre::{eyre::eyre, Result};
+use anyhow::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::prelude::*;
 
@@ -14,7 +14,10 @@ pub async fn dialogue_state(dialogue: &MyDialogue, bot: &Bot) -> Result<State> {
     if state.is_err() {
         bot.send_message(dialogue.chat_id(), "Da ist etwas schief gelaufen. Mehr weiß ich leider auch nicht. Sag am besten Jonas Bescheid.").await?;
     }
-    state.map_err(|e| eyre!("{e}"))
+    match state {
+        Ok(state) => Ok(state),
+        Err(err) => panic!("I don't know what's happening: {err}"),
+    }
 }
 
 pub async fn update_dialogue(

@@ -1,7 +1,6 @@
-extern crate encoding;
 extern crate pretty_env_logger;
 
-use color_eyre::Result;
+use anyhow::Result;
 use common::{
     bot::keyboards::signup_keyboard,
     models::{course::Course, participant::Participant, signup::SignupStatus},
@@ -13,7 +12,6 @@ use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    color_eyre::install()?;
     pretty_env_logger::init();
 
     log::info!("connecting to database");

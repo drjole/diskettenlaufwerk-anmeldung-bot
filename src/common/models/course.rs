@@ -1,7 +1,7 @@
 use crate::http::request_document;
+use anyhow::Result;
 use chrono::{NaiveDateTime, TimeZone};
 use chrono_tz::Europe::Berlin;
-use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use std::{collections::HashMap, fmt::Display};
 use url::Url;
@@ -79,14 +79,14 @@ impl Course {
             "https://unisport.koeln/e65/e41657/e41692/k_content41702/publicGetData";
         let client = reqwest::Client::new();
         let request = client.get(COURSES_URL);
-        let document = request_document(request).await?;
+        let response = request_document(request).await?;
+        let document = scraper::Html::parse_document(response.as_str());
 
-        let table_header_cells_selector = scraper::Selector::parse("thead > tr:first-of-type > th")
-            .map_err(|err| eyre!("{err}"))?;
-        let table_body_rows_selector =
-            scraper::Selector::parse("tbody > tr").map_err(|err| eyre!("{err}"))?;
-        let table_cells_selector = scraper::Selector::parse("td").map_err(|err| eyre!("{err}"))?;
-        let a_tag_selector = scraper::Selector::parse("a").map_err(|err| eyre!("{err}"))?;
+        let table_header_cells_selector =
+            scraper::Selector::parse("thead > tr:first-of-type > th").unwrap();
+        let table_body_rows_selector = scraper::Selector::parse("tbody > tr").unwrap();
+        let table_cells_selector = scraper::Selector::parse("td").unwrap();
+        let a_tag_selector = scraper::Selector::parse("a").unwrap();
 
         let table_headers: HashMap<String, usize> = document
             .select(&table_header_cells_selector)
@@ -100,9 +100,7 @@ impl Course {
 
         let mut courses = vec![];
 
-        let url_column = table_headers
-            .get("Anmeldung")
-            .ok_or_else(|| eyre!("Header 'Anmeldung' is missing"))?;
+        let url_column = table_headers.get("Anmeldung").unwrap();
 
         for table_row in document.select(&table_body_rows_selector) {
             let table_cells: Result<HashMap<usize, String>> = table_row
@@ -110,14 +108,8 @@ impl Course {
                 .enumerate()
                 .map(|(i, e)| {
                     if i == *url_column {
-                        let a_tag = e
-                            .select(&a_tag_selector)
-                            .next()
-                            .ok_or_else(|| eyre!("a-tag for course URL is missing"))?;
-                        let href = a_tag
-                            .value()
-                            .attr("href")
-                            .ok_or_else(|| eyre!("a-tag for course URL has no href attribute"))?;
+                        let a_tag = e.select(&a_tag_selector).next().unwrap();
+                        let href = a_tag.value().attr("href").unwrap();
                         Ok((i, href.to_string()))
                     } else {
                         Ok((i, e.text().collect()))
@@ -125,38 +117,23 @@ impl Course {
                 })
                 .collect();
             let table_cells = table_cells?;
-            let date = &table_cells[table_headers
-                .get("Zeitraum")
-                .ok_or_else(|| eyre!("Header 'Zeitraum' is missing"))?];
+            let date = &table_cells[table_headers.get("Zeitraum").unwrap()];
             let mut date_components = date.split('.');
             let date = format!(
                 "{}.{}.20{}",
-                date_components
-                    .next()
-                    .ok_or_else(|| eyre!("Day is missing in date"))?,
-                date_components
-                    .next()
-                    .ok_or_else(|| eyre!("Month is missing in date"))?,
-                date_components
-                    .next()
-                    .ok_or_else(|| eyre!("Year is missing in date"))?
+                date_components.next().unwrap(),
+                date_components.next().unwrap(),
+                date_components.next().unwrap()
             );
-            let time = &table_cells[table_headers
-                .get("Zeit")
-                .ok_or_else(|| eyre!("Header 'Zeit' is missing"))?];
-            let (start_time_of_day, end_time_of_day) = time
-                .split_once('-')
-                .ok_or_else(|| eyre!("'Zeit' field cannot be split at '-'"))?;
+            let time = &table_cells[table_headers.get("Zeit").unwrap()];
+            let (start_time_of_day, end_time_of_day) = time.split_once('-').unwrap();
 
-            let url = Url::parse(
-                &table_cells[table_headers
-                    .get("Anmeldung")
-                    .ok_or_else(|| eyre!("Header 'Anmeldung' is missing"))?],
-            )?;
+            let url = Url::parse(&table_cells[table_headers.get("Anmeldung").unwrap()])?;
+            if url.path() == "/buchsys/meldungen/keine_anmeldung_kurs.html" {
+                continue;
+            }
             let query_params: HashMap<_, _> = url.query_pairs().into_owned().collect();
-            let id_string = query_params
-                .get("Kursid")
-                .ok_or_else(|| eyre!("'Kursid' missing in URL"))?;
+            let id_string = query_params.get("Kursid").unwrap();
             let id: i64 = id_string.parse()?;
             let start_time = Berlin
                 .datetime_from_str(
@@ -167,18 +144,9 @@ impl Course {
             let end_time = Berlin
                 .datetime_from_str(&format!("{date} {end_time_of_day}:00"), "%d.%m.%Y %H:%M:%S")?
                 .naive_utc();
-            let level = table_cells[table_headers
-                .get("Bezeichnung")
-                .ok_or_else(|| eyre!("Header 'Bezeichnung' is missing"))?]
-            .clone();
-            let location = table_cells[table_headers
-                .get("Ort")
-                .ok_or_else(|| eyre!("Header 'Ort' is missing"))?]
-            .clone();
-            let trainer = table_cells[table_headers
-                .get("Kursleiter/In")
-                .ok_or_else(|| eyre!("Header 'Kursleiter/In' is missing"))?]
-            .clone();
+            let level = table_cells[table_headers.get("Bezeichnung").unwrap()].clone();
+            let location = table_cells[table_headers.get("Ort").unwrap()].clone();
+            let trainer = table_cells[table_headers.get("Kursleiter/In").unwrap()].clone();
 
             let course = Self {
                 id,

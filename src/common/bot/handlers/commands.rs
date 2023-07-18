@@ -5,7 +5,7 @@ use crate::{
     },
     models::participant::Participant,
 };
-use color_eyre::Result;
+use anyhow::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::prelude::*;
 

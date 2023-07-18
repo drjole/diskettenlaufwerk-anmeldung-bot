@@ -1,5 +1,5 @@
 use crate::bot::handlers;
-use color_eyre::Result;
+use anyhow::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{
     dispatching::{dialogue, dialogue::InMemStorage, UpdateHandler},
@@ -84,7 +84,7 @@ pub async fn start(pool: Pool<Postgres>) -> Result<()> {
     Ok(())
 }
 
-fn schema() -> UpdateHandler<color_eyre::Report> {
+fn schema() -> UpdateHandler<anyhow::Error> {
     use dptree::case;
 
     let command_handler = teloxide::filter_command::<Command, _>()
@@ -116,7 +116,8 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
 
     let callback_query_handler = Update::filter_callback_query()
         .branch(case![State::ReceiveGender(in_dialogue)].endpoint(handlers::receive_gender))
-        .branch(case![State::ReceiveStatus(in_dialogue)].endpoint(handlers::receive_status));
+        .branch(case![State::ReceiveStatus(in_dialogue)].endpoint(handlers::receive_status))
+        .branch(dptree::endpoint(handlers::receive_signup));
 
     dialogue::enter::<Update, InMemStorage<State>, State, _>()
         .branch(message_handler)

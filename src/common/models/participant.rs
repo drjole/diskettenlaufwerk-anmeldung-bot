@@ -1,5 +1,5 @@
 use crate::models::{course::Course, gender::Gender, signup::SignupStatus, status::Status};
-use color_eyre::Result;
+use anyhow::Result;
 use sqlx::{Pool, Postgres};
 use strum::EnumProperty;
 
@@ -119,13 +119,15 @@ impl Participant {
     ) -> Result<()> {
         sqlx::query!(
             r#"
-            UPDATE signups
-            SET status = $1
-            WHERE participant_id = $2 AND course_id = $3
+            INSERT INTO signups(participant_id, course_id, status)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (participant_id, course_id)
+            DO
+                UPDATE SET status = $3
             "#,
-            status as SignupStatus,
             self.id,
-            course_id
+            course_id,
+            status as SignupStatus,
         )
         .execute(pool)
         .await?;
