@@ -1,11 +1,19 @@
 ARG BINARY=bot
 
-FROM rust:1.71 as builder
-ARG BINARY
+FROM lukemathwalker/cargo-chef:latest-rust-1.71 as chef
 WORKDIR /app
+
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS builder
+ARG BINARY
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 ENV SQLX_OFFLINE=true
-RUN cargo build --release --bin ${BINARY}
+RUN cargo build --release --all-targets
 
 FROM debian:bullseye-slim
 ARG BINARY

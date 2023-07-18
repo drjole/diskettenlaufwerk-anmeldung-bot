@@ -1,5 +1,5 @@
 use crate::models::{course::Course, gender::Gender, signup::SignupStatus, status::Status};
-use anyhow::Result;
+use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use strum::EnumProperty;
 

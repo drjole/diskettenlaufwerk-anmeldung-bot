@@ -11,7 +11,7 @@ use crate::{
         status::Status,
     },
 };
-use anyhow::Result;
+use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::prelude::*;
 

@@ -1,4 +1,4 @@
-name: Build scraper Docker image and push to GHCR
+name: Build and push Docker images
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/drjole/diskettenlaufwerk-anmeldung-bot-scraper
+          images: ghcr.io/drjole/diskettenlaufwerk-anmeldung-bot-bot
           tags: |
             type=raw,value=latest
       - name: Login to GitHub Container Registry
@@ -29,7 +29,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
+      - name: Build and push bot image
+        uses: docker/build-push-action@v3
+        with:
+          file: Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BINARY=bot
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Build and push scraper image
         uses: docker/build-push-action@v3
         with:
           file: Dockerfile

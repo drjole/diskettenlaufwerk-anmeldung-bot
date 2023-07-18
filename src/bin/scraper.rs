@@ -1,6 +1,6 @@
 extern crate pretty_env_logger;
 
-use anyhow::Result;
+use color_eyre::Result;
 use common::{
     bot::keyboards::signup_keyboard,
     models::{course::Course, participant::Participant, signup::SignupStatus},
@@ -12,6 +12,10 @@ use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    match dotenv::dotenv() {
+        Ok(_) => log::info!("initialized environment from .env file"),
+        Err(err) => log::warn!("did not initialize dotenv: {err}"),
+    }
     pretty_env_logger::init();
 
     log::info!("connecting to database");
@@ -24,7 +28,10 @@ async fn main() -> Result<()> {
     Course::fetch(&pool).await?;
     let course_today = match Course::today(&pool).await? {
         Some(c) => c,
-        None => return Ok(()),
+        None => {
+            log::info!("no course found for today");
+            return Ok(());
+        }
     };
 
     let uninformed_participants = Participant::uninformed(&course_today, &pool).await?;

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use color_eyre::Result;
 use reqwest::RequestBuilder;
 use tokio::time::{sleep, Duration};
 

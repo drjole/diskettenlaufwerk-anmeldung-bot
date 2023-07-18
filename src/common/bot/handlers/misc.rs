@@ -1,4 +1,4 @@
-use anyhow::Result;
+use color_eyre::Result;
 use teloxide::prelude::*;
 
 pub async fn invalid(bot: Bot, msg: Message) -> Result<()> {

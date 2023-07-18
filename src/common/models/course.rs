@@ -1,7 +1,7 @@
 use crate::http::request_document;
-use anyhow::Result;
 use chrono::{NaiveDateTime, TimeZone};
 use chrono_tz::Europe::Berlin;
+use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use std::{collections::HashMap, fmt::Display};
 use url::Url;

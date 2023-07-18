@@ -1,16 +1,20 @@
 use crate::bot::handlers;
-use anyhow::Result;
+use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{
-    dispatching::{dialogue, dialogue::InMemStorage, UpdateHandler},
+    dispatching::{
+        dialogue::{self, serializer::Bincode, ErasedStorage, RedisStorage, Storage},
+        UpdateHandler,
+    },
     prelude::*,
     utils::command::BotCommands,
 };
 
-pub type MyDialogue = Dialogue<State, InMemStorage<State>>;
+pub type MyDialogue = Dialogue<State, ErasedStorage<State>>;
+pub type MyStorage = std::sync::Arc<ErasedStorage<State>>;
 pub type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
 pub enum State {
     #[default]
     Start,
@@ -72,11 +76,12 @@ enum Command {
     EditStatusRelatedInfo,
 }
 
-pub async fn start(pool: Pool<Postgres>) -> Result<()> {
+pub async fn start(pool: Pool<Postgres>, redis_url: String) -> Result<()> {
     let bot = Bot::from_env();
     bot.set_my_commands(Command::bot_commands()).await?;
+    let storage: MyStorage = RedisStorage::open(redis_url, Bincode).await?.erase();
     Dispatcher::builder(bot, schema())
-        .dependencies(dptree::deps![InMemStorage::<State>::new(), pool])
+        .dependencies(dptree::deps![storage, pool])
         .enable_ctrlc_handler()
         .build()
         .dispatch()
@@ -84,7 +89,7 @@ pub async fn start(pool: Pool<Postgres>) -> Result<()> {
     Ok(())
 }
 
-fn schema() -> UpdateHandler<anyhow::Error> {
+fn schema() -> UpdateHandler<color_eyre::Report> {
     use dptree::case;
 
     let command_handler = teloxide::filter_command::<Command, _>()
@@ -119,7 +124,7 @@ fn schema() -> UpdateHandler<anyhow::Error> {
         .branch(case![State::ReceiveStatus(in_dialogue)].endpoint(handlers::receive_status))
         .branch(dptree::endpoint(handlers::receive_signup));
 
-    dialogue::enter::<Update, InMemStorage<State>, State, _>()
+    dialogue::enter::<Update, ErasedStorage<State>, State, _>()
         .branch(message_handler)
         .branch(callback_query_handler)
 }
