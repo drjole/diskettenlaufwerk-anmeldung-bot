@@ -2,12 +2,18 @@ extern crate pretty_env_logger;
 
 use color_eyre::{eyre::eyre, Result};
 use common::{
-    bot::keyboards::signup_keyboard,
+    bot::{
+        keyboards::signup_keyboard,
+        schema::{MyStorage, State},
+    },
     models::{course::Course, participant::Participant, signup::SignupStatus},
 };
 use sqlx::postgres::PgPoolOptions;
 use std::env;
-use teloxide::prelude::*;
+use teloxide::{
+    dispatching::dialogue::{serializer::Bincode, RedisStorage, Storage},
+    prelude::*,
+};
 use tokio::time::{sleep, Duration};
 
 #[tokio::main]
@@ -41,6 +47,8 @@ async fn main() -> Result<()> {
     let uninformed_participants = Participant::uninformed(&course_today, &pool).await?;
 
     let bot = Bot::from_env();
+    let redis_url = env::var("REDIS_URL")?;
+    let storage: MyStorage = RedisStorage::open(redis_url, Bincode).await?.erase();
     for participant in &uninformed_participants {
         log::info!("informing participant {}", participant.id);
         bot.send_message(
@@ -55,9 +63,17 @@ Soll ich dich anmelden?"#
         )
         .reply_markup(signup_keyboard(course_today.id))
         .await?;
+
         participant
             .set_signup_status(&pool, course_today.id, SignupStatus::Notified)
             .await?;
+
+        storage
+            .clone()
+            .update_dialogue(ChatId(participant.id), State::ReceiveSignupResponse)
+            .await
+            .unwrap();
+
         sleep(Duration::from_secs(1)).await;
     }
 

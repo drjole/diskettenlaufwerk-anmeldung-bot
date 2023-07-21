@@ -27,6 +27,7 @@ pub enum State {
     ReceiveEmail(bool),
     ReceiveStatus(bool),
     ReceiveStatusRelatedInfo(bool),
+    ReceiveSignupResponse,
 }
 
 impl State {
@@ -41,7 +42,7 @@ impl State {
             | Self::ReceiveEmail(in_dialogue)
             | Self::ReceiveStatus(in_dialogue)
             | Self::ReceiveStatusRelatedInfo(in_dialogue) => in_dialogue,
-            Self::Start => &false,
+            Self::Start | Self::ReceiveSignupResponse => &false,
         }
     }
 }
@@ -51,9 +52,13 @@ impl State {
     description = "Diese Befehle sind verfügbar:",
     rename_rule = "snake_case"
 )]
-enum Command {
-    #[command(description = "Persönliche Daten eingeben")]
+pub enum Command {
+    #[command(description = "Hilfe anzeigen")]
+    Help,
+    #[command(description = "Starttext anzeigen")]
     Start,
+    #[command(description = "Persönliche Daten eingeben")]
+    EnterData,
     #[command(description = "Persönliche Daten anzeigen")]
     ShowData,
     #[command(description = "Vorname ändern")]
@@ -93,7 +98,9 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
     use dptree::case;
 
     let command_handler = teloxide::filter_command::<Command, _>()
-        .branch(case![Command::Start].endpoint(handlers::enter_data))
+        .branch(case![Command::Help].endpoint(handlers::help))
+        .branch(case![Command::Start].endpoint(handlers::start))
+        .branch(case![Command::EnterData].endpoint(handlers::enter_data))
         .branch(case![Command::ShowData].endpoint(handlers::show_data))
         .branch(case![Command::EditGivenName].endpoint(handlers::edit_given_name))
         .branch(case![Command::EditLastName].endpoint(handlers::edit_last_name))
@@ -122,7 +129,7 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
     let callback_query_handler = Update::filter_callback_query()
         .branch(case![State::ReceiveGender(in_dialogue)].endpoint(handlers::receive_gender))
         .branch(case![State::ReceiveStatus(in_dialogue)].endpoint(handlers::receive_status))
-        .branch(dptree::endpoint(handlers::receive_signup));
+        .branch(case![State::ReceiveSignupResponse].endpoint(handlers::receive_signup_response));
 
     dialogue::enter::<Update, ErasedStorage<State>, State, _>()
         .branch(message_handler)

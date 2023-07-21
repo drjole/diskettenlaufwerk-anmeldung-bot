@@ -2,6 +2,7 @@ use crate::{
     bot::{
         dialogue::{dialogue_state, update_dialogue},
         schema::{MyDialogue, State},
+        text_messages::TextMessage,
     },
     models::participant::Participant,
 };
@@ -208,11 +209,8 @@ pub async fn receive_status_related_info(
             participant.status_related_info = Some(text.to_string());
             participant.update(&pool).await?;
             if state.is_in_dialogue() {
-                bot.send_message(msg.chat.id, r#"Super! Damit habe ich alle Daten, die ich brauche.
-
-Wenn du deine Daten ändern willst, nutze die /edit... Befehle. Diese findest du auch, wenn du dir deine Daten mittels /show_data anzeigen lässt.
-
-Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antworten und dich anmelden lassen."#).await?;
+                bot.send_message(msg.chat.id, TextMessage::EnterDataComplete.to_string())
+                    .await?;
                 dialogue.exit().await.unwrap();
             } else {
                 bot.send_message(

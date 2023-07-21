@@ -1,13 +1,28 @@
 use crate::{
     bot::{
         dialogue::update_dialogue,
-        schema::{MyDialogue, State},
+        schema::{Command, MyDialogue, State},
+        text_messages::TextMessage,
     },
     models::participant::Participant,
 };
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
-use teloxide::prelude::*;
+use teloxide::{prelude::*, utils::command::BotCommands};
+
+pub async fn help(bot: Bot, msg: Message) -> Result<()> {
+    log::info!("help by chat {}", msg.chat.id);
+    bot.send_message(msg.chat.id, Command::descriptions().to_string())
+        .await?;
+    Ok(())
+}
+
+pub async fn start(bot: Bot, msg: Message) -> Result<()> {
+    log::info!("start by chat {}", msg.chat.id);
+    bot.send_message(msg.chat.id, TextMessage::Start.to_string())
+        .await?;
+    Ok(())
+}
 
 pub async fn enter_data(
     bot: Bot,
@@ -30,15 +45,8 @@ pub async fn enter_data(
 pub async fn show_data(bot: Bot, msg: Message, pool: Pool<Postgres>) -> Result<()> {
     log::info!("show_data by chat {}", msg.chat.id);
     let participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
-    bot.send_message(
-        msg.chat.id,
-        format!(
-            r#"Ich habe folgende Informationen über dich gespeichert. Nutze die angezeigten Befehle, um deine Daten zu ändern.
-
-{participant}"#
-        ),
-    )
-    .await?;
+    bot.send_message(msg.chat.id, TextMessage::ShowData(participant).to_string())
+        .await?;
     Ok(())
 }
 

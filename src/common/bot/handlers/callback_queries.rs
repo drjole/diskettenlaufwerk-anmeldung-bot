@@ -87,7 +87,7 @@ pub async fn receive_status(
     Ok(())
 }
 
-pub async fn receive_signup(
+pub async fn receive_signup_response(
     bot: Bot,
     dialogue: MyDialogue,
     q: CallbackQuery,
@@ -119,6 +119,7 @@ pub async fn receive_signup(
             bot.send_message(dialogue.chat_id(), "Ok, dann beim nächsten Mal vielleicht!")
                 .await?;
         }
+        dialogue.exit().await.unwrap();
     } else {
         bot.send_message(dialogue.chat_id(), "Das habe ich nicht verstanden.")
             .await?;

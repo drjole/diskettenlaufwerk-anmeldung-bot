@@ -3,7 +3,10 @@ use teloxide::prelude::*;
 
 pub async fn invalid(bot: Bot, msg: Message) -> Result<()> {
     log::info!("invalid by chat {}", msg.chat.id);
-    bot.send_message(msg.chat.id, "Diese Nachricht konnte ich nicht verarbeiten.")
-        .await?;
+    bot.send_message(
+        msg.chat.id,
+        "Diese Nachricht konnte ich nicht verarbeiten. Versuche es mit /help.",
+    )
+    .await?;
     Ok(())
 }

@@ -22,6 +22,7 @@ pub async fn update_dialogue(
     let participant = Participant::find_by_id(pool, dialogue.chat_id().0).await?;
     let message = match new_state {
         State::Start => "",
+        State::ReceiveSignupResponse => "",
         State::ReceiveGivenName(_) => "Bitte gib deinen Vornamen ein.",
         State::ReceiveLastName(_) => "Bitte gib deinen Nachnamen ein.",
         State::ReceiveGender(_) => "Bitte wähle dein Geschlecht aus.",

@@ -1,0 +1,42 @@
+use crate::models::participant::Participant;
+use std::fmt::Display;
+
+pub enum TextMessage {
+    Start,
+    ShowData(Participant),
+    EnterDataComplete,
+}
+
+impl Display for TextMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TextMessage::Start => write!(
+                f,
+                r#"Hey!
+
+Ich helfe dir dabei, dich für die Ultimate-Frisbee Kurse des UniSport Köln anzumelden.
+
+Um loszulegen, nutze den /enter_data Befehl.
+
+Keine Sorge! Solltest du bei der Eingabe deiner Daten einen Fehler machen, kannst du deine Daten später ändern.
+Fahre dafür zunächst mit der Eingabe deiner Daten fort und nutze dann die in /help angezeigten Befehle, um deine Daten zu ändern.
+
+Warnung: Ich überprüfe deine Daten in keinster Weise auf Echtheit oder Korrektheit, sondern schicke diese so, wie du sie eingibts, an den UniSport weiter."#
+            ),
+            TextMessage::ShowData(participant) => write!(
+                f,
+                r#"Ich habe folgende Informationen über dich gespeichert. Nutze die angezeigten Befehle, um deine Daten zu ändern.
+
+{participant}"#
+            ),
+            TextMessage::EnterDataComplete => write!(
+                f,
+                r#"Super! Damit habe ich alle Daten, die ich brauche.
+
+Wenn du deine Daten ändern willst, nutze die /edit... Befehle. Diese findest du auch, wenn du dir deine Daten mittels /show_data anzeigen lässt.
+
+Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antworten und dich anmelden lassen."#
+            ),
+        }
+    }
+}

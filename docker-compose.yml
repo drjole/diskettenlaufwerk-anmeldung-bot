@@ -9,7 +9,9 @@ services:
     depends_on:
       - db
     environment:
+      RUST_LOG: info
       DATABASE_URL: "postgres://postgres:password@db/frisbee"
+      REDIS_URL: "redis://redis:6379"
       TELOXIDE_TOKEN: "${TELOXIDE_TOKEN}"
   scraper:
     build:
@@ -19,7 +21,9 @@ services:
     depends_on:
       - db
     environment:
+      RUST_LOG: info
       DATABASE_URL: "postgres://postgres:password@db/frisbee"
+      REDIS_URL: "redis://redis:6379"
       TELOXIDE_TOKEN: "${TELOXIDE_TOKEN}"
     profiles:
       - donotstart
@@ -28,3 +32,6 @@ services:
     environment:
       POSTGRES_DB: frisbee
       POSTGRES_PASSWORD: password
+  redis:
+    image: redis:7
+    restart: always
