@@ -1,28 +1,27 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE signups\n            SET status = $1\n            WHERE participant_id = $2 AND course_id = $3\n            ",
+  "query": "\n            INSERT INTO signups(participant_id, course_id, status)\n            VALUES ($1, $2, $3)\n            ON CONFLICT (participant_id, course_id)\n            DO\n                UPDATE SET status = $3\n            ",
   "describe": {
     "columns": [],
     "parameters": {
       "Left": [
+        "Int8",
+        "Int8",
         {
           "Custom": {
             "name": "signup_status",
             "kind": {
               "Enum": [
-                "Uninformed",
                 "Notified",
                 "SignedUp",
                 "Rejected"
               ]
             }
           }
-        },
-        "Int8",
-        "Int8"
+        }
       ]
     },
     "nullable": []
   },
-  "hash": "6f77734e49f1f5a107c48efd6ea059b1e9c7397d19e9b0c017254dcc52f3dd74"
+  "hash": "9b25f93bb8e0002fd902b580338b2739390112adae68d3e3c9736923508c5932"
 }
