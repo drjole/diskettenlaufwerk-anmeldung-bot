@@ -9,15 +9,8 @@ use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::prelude::*;
 
-pub async fn dialogue_state(dialogue: &MyDialogue, bot: &Bot) -> Result<State> {
-    let state = dialogue.get().await?.ok_or("Dialogue has no state");
-    if state.is_err() {
-        bot.send_message(dialogue.chat_id(), "Da ist etwas schief gelaufen. Mehr weiß ich leider auch nicht. Sag am besten Jonas Bescheid.").await?;
-    }
-    match state {
-        Ok(state) => Ok(state),
-        Err(err) => panic!("I don't know what's happening: {err}"),
-    }
+pub async fn dialogue_state(dialogue: &MyDialogue) -> State {
+    dialogue.get().await.unwrap().unwrap()
 }
 
 pub async fn update_dialogue(
@@ -80,7 +73,7 @@ pub async fn update_dialogue(
         }
     };
 
-    dialogue.update(new_state).await?;
+    dialogue.update(new_state).await.unwrap();
 
     Ok(())
 }

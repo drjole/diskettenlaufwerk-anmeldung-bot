@@ -31,13 +31,13 @@ pub async fn receive_gender(
     if let Some(Ok(gender)) = q.data.map(|text| text.parse::<Gender>()) {
         participant.gender = Some(gender);
         participant.update(&pool).await?;
-        let state = dialogue_state(&dialogue, &bot).await?;
+        let state = dialogue_state(&dialogue).await;
         if state.is_in_dialogue() {
             update_dialogue(State::ReceiveStreet(true), bot, dialogue, &pool).await?;
         } else {
             bot.send_message(dialogue.chat_id(), "Geschlecht geändert.")
                 .await?;
-            dialogue.reset().await?;
+            dialogue.reset().await.unwrap();
         }
     } else {
         let keyboard = gender_keyboard();
@@ -67,7 +67,7 @@ pub async fn receive_status(
     if let Some(Ok(status)) = q.data.map(|text| text.parse::<Status>()) {
         participant.status = Some(status.clone());
         participant.update(&pool).await?;
-        let state = dialogue_state(&dialogue, &bot).await?;
+        let state = dialogue_state(&dialogue).await;
         if state.is_in_dialogue() {
             update_dialogue(State::ReceiveStatusRelatedInfo(true), bot, dialogue, &pool).await?;
         } else {

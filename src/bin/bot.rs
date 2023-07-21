@@ -1,6 +1,6 @@
 extern crate pretty_env_logger;
 
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use common::bot;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
@@ -8,7 +8,11 @@ use std::env;
 #[tokio::main]
 async fn main() -> Result<()> {
     match dotenv::dotenv() {
-        Ok(_) => log::info!("initialized environment from .env file"),
+        Ok(path) => log::info!(
+            "initialized environment from this file: {}",
+            path.to_str()
+                .ok_or_else(|| eyre!("could not convert path to dotenv file to str"))?
+        ),
         Err(err) => log::warn!("did not initialize dotenv: {err}"),
     }
     pretty_env_logger::init();

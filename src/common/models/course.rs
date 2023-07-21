@@ -1,7 +1,7 @@
 use crate::http::request_document;
 use chrono::{NaiveDateTime, TimeZone};
 use chrono_tz::Europe::Berlin;
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use std::{collections::HashMap, fmt::Display};
 use url::Url;
@@ -100,40 +100,65 @@ impl Course {
 
         let mut courses = vec![];
 
-        let url_column = table_headers.get("Anmeldung").unwrap();
+        let url_column = table_headers
+            .get("Anmeldung")
+            .ok_or_else(|| eyre!("no header 'Anmeldung'"))?;
 
         for table_row in document.select(&table_body_rows_selector) {
-            let table_cells: Result<HashMap<usize, String>> = table_row
+            let table_cells = table_row
                 .select(&table_cells_selector)
                 .enumerate()
                 .map(|(i, e)| {
                     if i == *url_column {
-                        let a_tag = e.select(&a_tag_selector).next().unwrap();
-                        let href = a_tag.value().attr("href").unwrap();
+                        let a_tag = e
+                            .select(&a_tag_selector)
+                            .next()
+                            .ok_or_else(|| eyre!("no a tag found in table row"))?;
+                        let href = a_tag
+                            .value()
+                            .attr("href")
+                            .ok_or_else(|| eyre!("no href attribute on a tag"))?;
                         Ok((i, href.to_string()))
                     } else {
                         Ok((i, e.text().collect()))
                     }
                 })
-                .collect();
-            let table_cells = table_cells?;
-            let date = &table_cells[table_headers.get("Zeitraum").unwrap()];
+                .collect::<Result<HashMap<usize, String>>>()?;
+            let date = &table_cells[table_headers
+                .get("Zeitraum")
+                .ok_or_else(|| eyre!("no header 'Zeitraum'"))?];
             let mut date_components = date.split('.');
             let date = format!(
                 "{}.{}.20{}",
-                date_components.next().unwrap(),
-                date_components.next().unwrap(),
-                date_components.next().unwrap()
+                date_components
+                    .next()
+                    .ok_or_else(|| eyre!("no first value for date component"))?,
+                date_components
+                    .next()
+                    .ok_or_else(|| eyre!("no second value for date component"))?,
+                date_components
+                    .next()
+                    .ok_or_else(|| eyre!("no third value for date component"))?,
             );
-            let time = &table_cells[table_headers.get("Zeit").unwrap()];
-            let (start_time_of_day, end_time_of_day) = time.split_once('-').unwrap();
+            let time = &table_cells[table_headers
+                .get("Zeit")
+                .ok_or_else(|| eyre!("no header 'Zeit'"))?];
+            let (start_time_of_day, end_time_of_day) = time
+                .split_once('-')
+                .ok_or_else(|| eyre!("could not split time at '-'"))?;
 
-            let url = Url::parse(&table_cells[table_headers.get("Anmeldung").unwrap()])?;
+            let url = Url::parse(
+                &table_cells[table_headers
+                    .get("Anmeldung")
+                    .ok_or_else(|| eyre!("no header 'Anmeldung'"))?],
+            )?;
             if url.path() == "/buchsys/meldungen/keine_anmeldung_kurs.html" {
                 continue;
             }
             let query_params: HashMap<_, _> = url.query_pairs().into_owned().collect();
-            let id_string = query_params.get("Kursid").unwrap();
+            let id_string = query_params
+                .get("Kursid")
+                .ok_or_else(|| eyre!("no query param 'Kursid'"))?;
             let id: i64 = id_string.parse()?;
             let start_time = Berlin
                 .datetime_from_str(
@@ -144,9 +169,18 @@ impl Course {
             let end_time = Berlin
                 .datetime_from_str(&format!("{date} {end_time_of_day}:00"), "%d.%m.%Y %H:%M:%S")?
                 .naive_utc();
-            let level = table_cells[table_headers.get("Bezeichnung").unwrap()].clone();
-            let location = table_cells[table_headers.get("Ort").unwrap()].clone();
-            let trainer = table_cells[table_headers.get("Kursleiter/In").unwrap()].clone();
+            let level = table_cells[table_headers
+                .get("Bezeichnung")
+                .ok_or_else(|| eyre!("no header 'Bezeichnung'"))?]
+            .clone();
+            let location = table_cells[table_headers
+                .get("Ort")
+                .ok_or_else(|| eyre!("no header 'Ort'"))?]
+            .clone();
+            let trainer = table_cells[table_headers
+                .get("Kursleiter/In")
+                .ok_or_else(|| eyre!("no header 'Kursleiter/In'"))?]
+            .clone();
 
             let course = Self {
                 id,

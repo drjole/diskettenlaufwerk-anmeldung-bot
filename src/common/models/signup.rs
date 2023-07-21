@@ -1,5 +1,5 @@
 use crate::{http::request_document, models::participant::Participant};
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::Result;
 use encoding::{all::ISO_8859_1, Encoding};
 use form_urlencoded::byte_serialize;
 use reqwest::RequestBuilder;
@@ -69,7 +69,7 @@ pub async fn signup(participant: &Participant, course_id: i64) -> Result<()> {
         .body(body);
     request = add_headers(request);
     let response = request_document(request).await?;
-    dbg!(response);
+    println!("{response}");
 
     Ok(())
 }
@@ -127,7 +127,7 @@ fn encode_params(params: &mut [(String, String)]) -> Result<()> {
         *value = byte_serialize(
             &ISO_8859_1
                 .encode(value, encoding::EncoderTrap::Strict)
-                .map_err(|e| eyre!("failed to encode to ISO 8859-1: {e}"))?,
+                .unwrap(),
         )
         .collect();
     }

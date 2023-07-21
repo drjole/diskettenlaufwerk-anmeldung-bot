@@ -21,12 +21,12 @@ pub async fn receive_given_name(
         Some(text) => {
             participant.given_name = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue, &bot).await?;
+            let state = dialogue_state(&dialogue).await;
             if state.is_in_dialogue() {
                 update_dialogue(State::ReceiveLastName(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Vorname geändert.").await?;
-                dialogue.reset().await?;
+                dialogue.reset().await.unwrap();
             }
         }
         None => {
@@ -52,12 +52,12 @@ pub async fn receive_last_name(
         Some(text) => {
             participant.last_name = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue, &bot).await?;
+            let state = dialogue_state(&dialogue).await;
             if state.is_in_dialogue() {
                 update_dialogue(State::ReceiveGender(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Nachname geändert.").await?;
-                dialogue.reset().await?;
+                dialogue.reset().await.unwrap();
             }
         }
         None => {
@@ -83,13 +83,13 @@ pub async fn receive_street(
         Some(text) => {
             participant.street = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue, &bot).await?;
+            let state = dialogue_state(&dialogue).await;
             if state.is_in_dialogue() {
                 update_dialogue(State::ReceiveCity(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Straße und Hausnummer geändert.")
                     .await?;
-                dialogue.reset().await?;
+                dialogue.reset().await.unwrap();
             }
         }
         None => {
@@ -112,13 +112,13 @@ pub async fn receive_city(
         Some(text) => {
             participant.city = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue, &bot).await?;
+            let state = dialogue_state(&dialogue).await;
             if state.is_in_dialogue() {
                 update_dialogue(State::ReceivePhone(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Postleitzahl und Ort geändert.")
                     .await?;
-                dialogue.reset().await?;
+                dialogue.reset().await.unwrap();
             }
         }
         None => {
@@ -141,13 +141,13 @@ pub async fn receive_phone(
         Some(text) => {
             participant.phone = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue, &bot).await?;
+            let state = dialogue_state(&dialogue).await;
             if state.is_in_dialogue() {
                 update_dialogue(State::ReceiveEmail(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Telefonnummer geändert.")
                     .await?;
-                dialogue.reset().await?;
+                dialogue.reset().await.unwrap();
             }
         }
         None => {
@@ -173,13 +173,13 @@ pub async fn receive_email(
         Some(text) => {
             participant.email = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue, &bot).await?;
+            let state = dialogue_state(&dialogue).await;
             if state.is_in_dialogue() {
                 update_dialogue(State::ReceiveStatus(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "E-Mail-Adresse geändert.")
                     .await?;
-                dialogue.reset().await?;
+                dialogue.reset().await.unwrap();
             }
         }
         None => {
@@ -202,7 +202,7 @@ pub async fn receive_status_related_info(
     log::info!("receive_status_related_info by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     let status_related_info_name = participant.status_related_info_name().unwrap_or_default();
-    let state = dialogue_state(&dialogue, &bot).await?;
+    let state = dialogue_state(&dialogue).await;
     match msg.text() {
         Some(text) => {
             participant.status_related_info = Some(text.to_string());
@@ -213,7 +213,7 @@ pub async fn receive_status_related_info(
 Wenn du deine Daten ändern willst, nutze die /edit... Befehle. Diese findest du auch, wenn du dir deine Daten mittels /show_data anzeigen lässt.
 
 Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antworten und dich anmelden lassen."#).await?;
-                dialogue.exit().await?;
+                dialogue.exit().await.unwrap();
             } else {
                 bot.send_message(
                     msg.chat.id,

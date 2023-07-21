@@ -50,11 +50,11 @@ pub fn signup_keyboard(course_id: i64) -> InlineKeyboardMarkup {
     let row = vec![
         InlineKeyboardButton::callback(
             "Aber sowas von!",
-            serde_json::to_string(&yes_answer).unwrap_or_else(|e| panic!("{e}")),
+            serde_json::to_string(&yes_answer).unwrap_or_else(|err| panic!("{err}")),
         ),
         InlineKeyboardButton::callback(
             "Heute nicht.",
-            serde_json::to_string(&no_answer).unwrap_or_else(|e| panic!("{e}")),
+            serde_json::to_string(&no_answer).unwrap_or_else(|err| panic!("{err}")),
         ),
     ];
     keyboard.push(row);
