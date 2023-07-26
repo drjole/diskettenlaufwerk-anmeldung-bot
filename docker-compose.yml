@@ -8,6 +8,7 @@ services:
         - BINARY=bot
     depends_on:
       - db
+      - redis
     environment:
       RUST_LOG: info
       DATABASE_URL: "postgres://postgres:password@db/frisbee"
@@ -20,6 +21,7 @@ services:
         - BINARY=scraper
     depends_on:
       - db
+      - redis
     environment:
       RUST_LOG: info
       DATABASE_URL: "postgres://postgres:password@db/frisbee"
