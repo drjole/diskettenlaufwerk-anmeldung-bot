@@ -3,6 +3,7 @@ use std::fmt::Display;
 
 pub enum TextMessage {
     Start,
+    Cancel,
     ShowData(Participant),
     EnterDataComplete,
 }
@@ -23,6 +24,7 @@ Fahre dafür zunächst mit der Eingabe deiner Daten fort und nutze dann die in /
 
 Warnung: Ich überprüfe deine Daten in keinster Weise auf Echtheit oder Korrektheit, sondern schicke diese so, wie du sie eingibts, an den UniSport weiter."#
             ),
+            TextMessage::Cancel => write!(f, "Aktion abgebrochen."),
             TextMessage::ShowData(participant) => write!(
                 f,
                 r#"Ich habe folgende Informationen über dich gespeichert. Nutze die angezeigten Befehle, um deine Daten zu ändern.

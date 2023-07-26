@@ -10,17 +10,27 @@ use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{prelude::*, utils::command::BotCommands};
 
-pub async fn help(bot: Bot, msg: Message) -> Result<()> {
+pub async fn help(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
     log::info!("help by chat {}", msg.chat.id);
     bot.send_message(msg.chat.id, Command::descriptions().to_string())
         .await?;
+    dialogue.reset().await.unwrap();
     Ok(())
 }
 
-pub async fn start(bot: Bot, msg: Message) -> Result<()> {
+pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
     log::info!("start by chat {}", msg.chat.id);
     bot.send_message(msg.chat.id, TextMessage::Start.to_string())
         .await?;
+    dialogue.reset().await.unwrap();
+    Ok(())
+}
+
+pub async fn cancel(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
+    log::info!("cancel by chat {}", msg.chat.id);
+    bot.send_message(msg.chat.id, TextMessage::Cancel.to_string())
+        .await?;
+    dialogue.reset().await.unwrap();
     Ok(())
 }
 
@@ -42,11 +52,17 @@ pub async fn enter_data(
     Ok(())
 }
 
-pub async fn show_data(bot: Bot, msg: Message, pool: Pool<Postgres>) -> Result<()> {
+pub async fn show_data(
+    bot: Bot,
+    dialogue: MyDialogue,
+    msg: Message,
+    pool: Pool<Postgres>,
+) -> Result<()> {
     log::info!("show_data by chat {}", msg.chat.id);
     let participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     bot.send_message(msg.chat.id, TextMessage::ShowData(participant).to_string())
         .await?;
+    dialogue.reset().await.unwrap();
     Ok(())
 }
 

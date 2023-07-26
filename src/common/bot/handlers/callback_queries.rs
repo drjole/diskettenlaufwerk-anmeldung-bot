@@ -119,7 +119,7 @@ pub async fn receive_signup_response(
             bot.send_message(dialogue.chat_id(), "Ok, dann vielleicht beim nächsten Mal!")
                 .await?;
         }
-        dialogue.exit().await.unwrap();
+        dialogue.reset().await.unwrap();
     } else {
         bot.send_message(
             dialogue.chat_id(),
@@ -148,7 +148,7 @@ pub async fn receive_email_callback(
             "Eingabe der E-Mail-Adresse übersprungen.",
         )
         .await?;
-        update_dialogue(State::ReceiveStatus(false), bot, dialogue, &pool).await?;
+        dialogue.reset().await.unwrap();
     }
     Ok(())
 }

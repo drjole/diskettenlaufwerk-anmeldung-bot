@@ -36,6 +36,7 @@ async fn main() -> Result<()> {
 
     log::info!("fetching new courses");
     Course::fetch(&pool).await?;
+
     let course_today = match Course::today(&pool).await? {
         Some(c) => c,
         None => {
@@ -43,13 +44,23 @@ async fn main() -> Result<()> {
             return Ok(());
         }
     };
-
     let uninformed_participants = Participant::uninformed(&course_today, &pool).await?;
 
     let bot = Bot::from_env();
     let redis_url = env::var("REDIS_URL")?;
     let storage: MyStorage = RedisStorage::open(redis_url, Bincode).await?.erase();
     for participant in &uninformed_participants {
+        let state = storage
+            .clone()
+            .get_dialogue(ChatId(participant.id))
+            .await
+            .unwrap()
+            .unwrap();
+        // Only inform participants that are not currently entering data or doing something else.
+        if !matches!(state, State::Default) {
+            continue;
+        }
+
         log::info!("informing participant {}", participant.id);
         bot.send_message(
             ChatId(participant.id),

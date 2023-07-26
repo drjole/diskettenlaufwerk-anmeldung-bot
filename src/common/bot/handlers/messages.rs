@@ -211,7 +211,6 @@ pub async fn receive_status_related_info(
             if state.is_in_dialogue() {
                 bot.send_message(msg.chat.id, TextMessage::EnterDataComplete.to_string())
                     .await?;
-                dialogue.exit().await.unwrap();
             } else {
                 bot.send_message(
                     msg.chat.id,
@@ -219,6 +218,7 @@ pub async fn receive_status_related_info(
                 )
                 .await?;
             }
+            dialogue.reset().await.unwrap();
         }
         None => {
             bot.send_message(

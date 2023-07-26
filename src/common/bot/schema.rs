@@ -7,6 +7,7 @@ use teloxide::{
         UpdateHandler,
     },
     prelude::*,
+    types::BotCommand,
     utils::command::BotCommands,
 };
 
@@ -17,7 +18,7 @@ pub type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 #[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
 pub enum State {
     #[default]
-    Start,
+    Default,
     ReceiveGivenName(bool),
     ReceiveLastName(bool),
     ReceiveGender(bool),
@@ -42,7 +43,7 @@ impl State {
             | Self::ReceiveEmail(in_dialogue)
             | Self::ReceiveStatus(in_dialogue)
             | Self::ReceiveStatusRelatedInfo(in_dialogue) => in_dialogue,
-            Self::Start | Self::ReceiveSignupResponse => &false,
+            Self::Default | Self::ReceiveSignupResponse => &false,
         }
     }
 }
@@ -57,9 +58,11 @@ pub enum Command {
     Help,
     #[command(description = "Starttext anzeigen")]
     Start,
-    #[command(description = "Persönliche Daten eingeben")]
+    #[command(description = "Aktuelle Aktion abbrechen")]
+    Cancel,
+    #[command(description = "Daten eingeben")]
     EnterData,
-    #[command(description = "Persönliche Daten anzeigen")]
+    #[command(description = "Daten anzeigen/bearbeiten")]
     ShowData,
     #[command(description = "Vorname ändern")]
     EditGivenName,
@@ -83,7 +86,13 @@ pub enum Command {
 
 pub async fn start(pool: Pool<Postgres>, redis_url: String) -> Result<()> {
     let bot = Bot::from_env();
-    bot.set_my_commands(Command::bot_commands()).await?;
+    bot.set_my_commands(
+        Command::bot_commands()
+            .into_iter()
+            .take(5)
+            .collect::<Vec<BotCommand>>(),
+    )
+    .await?;
     let storage: MyStorage = RedisStorage::open(redis_url, Bincode).await?.erase();
     Dispatcher::builder(bot, schema())
         .dependencies(dptree::deps![storage, pool])
@@ -100,6 +109,7 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
     let command_handler = teloxide::filter_command::<Command, _>()
         .branch(case![Command::Help].endpoint(handlers::help))
         .branch(case![Command::Start].endpoint(handlers::start))
+        .branch(case![Command::Cancel].endpoint(handlers::cancel))
         .branch(case![Command::EnterData].endpoint(handlers::enter_data))
         .branch(case![Command::ShowData].endpoint(handlers::show_data))
         .branch(case![Command::EditGivenName].endpoint(handlers::edit_given_name))
