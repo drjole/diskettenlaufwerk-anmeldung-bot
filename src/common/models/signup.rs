@@ -70,7 +70,7 @@ pub async fn signup(participant: &Participant, course_id: i64) -> Result<()> {
         .body(body);
     request = add_headers(request);
     let response = request_document(request).await?;
-    println!("{response}");
+    dbg!(&response);
 
     Ok(())
 }

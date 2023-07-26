@@ -25,15 +25,15 @@ impl Participant {
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             "#,
             self.id,
-            self.given_name.clone().unwrap_or_default(),
-            self.last_name.clone().unwrap_or_default(),
+            self.given_name,
+            self.last_name,
             self.gender.clone() as Option<Gender>,
-            self.street.clone().unwrap_or_default(),
-            self.city.clone().unwrap_or_default(),
-            self.phone.clone().unwrap_or_default(),
-            self.email.clone().unwrap_or_default(),
+            self.street,
+            self.city,
+            self.phone,
+            self.email,
             self.status.clone() as Option<Status>,
-            self.status_related_info.clone().unwrap_or_default(),
+            self.status_related_info,
         )
             .execute(pool)
             .await?;
@@ -95,15 +95,15 @@ impl Participant {
                 status_related_info = $9
             WHERE id = $10
             "#,
-            self.given_name.clone().unwrap_or_default(),
-            self.last_name.clone().unwrap_or_default(),
+            self.given_name,
+            self.last_name,
             self.gender.clone() as Option<Gender>,
-            self.street.clone().unwrap_or_default(),
-            self.city.clone().unwrap_or_default(),
-            self.phone.clone().unwrap_or_default(),
-            self.email.clone().unwrap_or_default(),
+            self.street,
+            self.city,
+            self.phone,
+            self.email,
             self.status.clone() as Option<Status>,
-            self.status_related_info.clone().unwrap_or_default(),
+            self.status_related_info,
             self.id
         )
         .execute(pool)

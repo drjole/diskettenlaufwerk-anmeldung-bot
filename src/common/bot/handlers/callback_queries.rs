@@ -1,6 +1,9 @@
-use crate::bot::{
-    dialogue::{dialogue_state, update_dialogue},
-    schema::{MyDialogue, State},
+use crate::{
+    bot::{
+        dialogue::{dialogue_state, update_dialogue},
+        schema::{MyDialogue, State},
+    },
+    models::participant::Participant,
 };
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
@@ -20,11 +23,19 @@ pub async fn receive_email_callback(
     .unwrap();
     bot.edit_message_reply_markup(dialogue.chat_id(), message_id)
         .await?;
-    bot.send_message(
-        dialogue.chat_id(),
-        "Eingabe der E-Mail-Adresse übersprungen.",
-    )
-    .await?;
+    let mut participant = Participant::find_by_id(&pool, dialogue.chat_id().0).await?;
+    if participant.email.is_some() {
+        participant.email = None;
+        participant.update(&pool).await?;
+        bot.send_message(dialogue.chat_id(), "E-Mail-Adresse gelöscht.")
+            .await?;
+    } else {
+        bot.send_message(
+            dialogue.chat_id(),
+            "Eingabe der E-Mail-Adresse übersprungen.",
+        )
+        .await?;
+    }
     let state = dialogue_state(&dialogue).await;
     if state.is_in_dialogue() {
         update_dialogue(State::ReceiveStatus(true), bot, dialogue, &pool)
