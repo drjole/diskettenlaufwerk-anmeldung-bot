@@ -7,7 +7,7 @@ use crate::{
 };
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
-use teloxide::prelude::*;
+use teloxide::{prelude::*, types::KeyboardRemove};
 
 use super::keyboards::no_answer_keyboard;
 
@@ -16,7 +16,7 @@ pub async fn dialogue_state(dialogue: &MyDialogue) -> State {
 }
 
 pub async fn update_dialogue(
-    new_state: State,
+    mut new_state: State,
     bot: Bot,
     dialogue: MyDialogue,
     pool: &Pool<Postgres>,
@@ -24,7 +24,7 @@ pub async fn update_dialogue(
     let participant = Participant::find_by_id(pool, dialogue.chat_id().0).await?;
     let message = match new_state {
         State::Default => "",
-        State::ReceiveSignupResponse => "",
+        State::ReceiveSignupResponse(_) => "",
         State::ReceiveGivenName(_) => "Bitte gib deinen Vornamen ein.",
         State::ReceiveLastName(_) => "Bitte gib deinen Nachnamen ein.",
         State::ReceiveGender(_) => "Bitte wähle dein Geschlecht aus.",
@@ -35,7 +35,7 @@ pub async fn update_dialogue(
             "Bitte gib deine Postleitzahl und deinen Ort ein.\n\nBeispiel: 50678 Köln"
         }
         State::ReceivePhone(_) => "Bitte gib deine Telefonnummer ein.",
-        State::ReceiveEmail(_) => "Bitte gib deine E-Mail-Adresse ein.",
+        State::ReceiveEmail(_, _) => "Bitte gib deine E-Mail-Adresse ein.",
         State::ReceiveStatus(_) => "Bitte wähle deinen Status aus.",
         State::ReceiveStatusRelatedInfo(_) => {
             if participant.is_student() {
@@ -54,10 +54,12 @@ pub async fn update_dialogue(
                 .reply_markup(gender_keyboard())
                 .await?;
         }
-        State::ReceiveEmail(_) => {
-            bot.send_message(dialogue.chat_id(), message)
+        State::ReceiveEmail(in_dialogue, _) => {
+            let msg = bot
+                .send_message(dialogue.chat_id(), message)
                 .reply_markup(no_answer_keyboard())
                 .await?;
+            new_state = State::ReceiveEmail(in_dialogue, Some(msg.id));
         }
         State::ReceiveStatus(_) => {
             bot.send_message(dialogue.chat_id(), message)
@@ -66,18 +68,23 @@ pub async fn update_dialogue(
         }
         State::ReceiveStatusRelatedInfo(_) => {
             if participant.status.is_some() {
-                bot.send_message(dialogue.chat_id(), message).await?;
+                bot.send_message(dialogue.chat_id(), message)
+                    .reply_markup(KeyboardRemove::default())
+                    .await?;
             } else {
                 bot.send_message(
                     dialogue.chat_id(),
                     "Du musst zuerst deinen Status auswählen: /edit_status",
                 )
+                .reply_markup(KeyboardRemove::default())
                 .await?;
                 return Ok(());
             }
         }
         _ => {
-            bot.send_message(dialogue.chat_id(), message).await?;
+            bot.send_message(dialogue.chat_id(), message)
+                .reply_markup(KeyboardRemove::default())
+                .await?;
         }
     };
 

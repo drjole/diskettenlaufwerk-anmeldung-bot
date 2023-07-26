@@ -7,7 +7,7 @@ use teloxide::{
         UpdateHandler,
     },
     prelude::*,
-    types::BotCommand,
+    types::{BotCommand, MessageId},
     utils::command::BotCommands,
 };
 
@@ -25,10 +25,10 @@ pub enum State {
     ReceiveStreet(bool),
     ReceiveCity(bool),
     ReceivePhone(bool),
-    ReceiveEmail(bool),
+    ReceiveEmail(bool, Option<MessageId>),
     ReceiveStatus(bool),
     ReceiveStatusRelatedInfo(bool),
-    ReceiveSignupResponse,
+    ReceiveSignupResponse(i64),
 }
 
 impl State {
@@ -40,10 +40,10 @@ impl State {
             | Self::ReceiveStreet(in_dialogue)
             | Self::ReceiveCity(in_dialogue)
             | Self::ReceivePhone(in_dialogue)
-            | Self::ReceiveEmail(in_dialogue)
+            | Self::ReceiveEmail(in_dialogue, _)
             | Self::ReceiveStatus(in_dialogue)
             | Self::ReceiveStatusRelatedInfo(in_dialogue) => in_dialogue,
-            Self::Default | Self::ReceiveSignupResponse => &false,
+            Self::Default | Self::ReceiveSignupResponse(_) => &false,
         }
     }
 }
@@ -126,21 +126,29 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
         .branch(command_handler)
         .branch(case![State::ReceiveGivenName(in_dialogue)].endpoint(handlers::receive_given_name))
         .branch(case![State::ReceiveLastName(in_dialogue)].endpoint(handlers::receive_last_name))
+        .branch(case![State::ReceiveGender(in_dialogue)].endpoint(handlers::receive_gender))
         .branch(case![State::ReceiveStreet(in_dialogue)].endpoint(handlers::receive_street))
         .branch(case![State::ReceiveCity(in_dialogue)].endpoint(handlers::receive_city))
         .branch(case![State::ReceivePhone(in_dialogue)].endpoint(handlers::receive_phone))
-        .branch(case![State::ReceiveEmail(in_dialogue)].endpoint(handlers::receive_email))
+        .branch(
+            case![State::ReceiveEmail(in_dialogue, message_id)].endpoint(handlers::receive_email),
+        )
+        .branch(case![State::ReceiveStatus(in_dialogue)].endpoint(handlers::receive_status))
         .branch(
             case![State::ReceiveStatusRelatedInfo(in_dialogue)]
                 .endpoint(handlers::receive_status_related_info),
         )
+        .branch(
+            case![State::ReceiveSignupResponse(course_id)]
+                .endpoint(handlers::receive_signup_response),
+        )
         .branch(dptree::endpoint(handlers::invalid));
 
     let callback_query_handler = Update::filter_callback_query()
-        .branch(case![State::ReceiveGender(in_dialogue)].endpoint(handlers::receive_gender))
-        .branch(case![State::ReceiveEmail(in_dialogue)].endpoint(handlers::receive_email_callback))
-        .branch(case![State::ReceiveStatus(in_dialogue)].endpoint(handlers::receive_status))
-        .branch(case![State::ReceiveSignupResponse].endpoint(handlers::receive_signup_response))
+        .branch(
+            case![State::ReceiveEmail(in_dialogue, message_id)]
+                .endpoint(handlers::receive_email_callback),
+        )
         .branch(dptree::endpoint(handlers::invalid_callback_query));
 
     dialogue::enter::<Update, ErasedStorage<State>, State, _>()

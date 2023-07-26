@@ -4,8 +4,7 @@ use encoding::{all::ISO_8859_1, Encoding};
 use form_urlencoded::byte_serialize;
 use reqwest::RequestBuilder;
 use scraper::{ElementRef, Html};
-use serde::{Deserialize, Serialize};
-use strum::{Display, EnumString};
+use strum::{Display, EnumIter, EnumProperty, EnumString};
 
 #[derive(Clone, Debug, Default, Display, EnumString, sqlx::Type)]
 #[sqlx(type_name = "signup_status")]
@@ -17,10 +16,12 @@ pub enum SignupStatus {
     Rejected,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SignupRequest {
-    pub course_id: i64,
-    pub answer: bool,
+#[derive(Clone, Debug, Display, EnumIter, EnumProperty)]
+pub enum SignupRequest {
+    #[strum(props(pretty = "Aber sowas von!"))]
+    Accept,
+    #[strum(props(pretty = "Heute leider nicht."))]
+    Reject,
 }
 
 const SIGNUP_URL: &str = "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi";

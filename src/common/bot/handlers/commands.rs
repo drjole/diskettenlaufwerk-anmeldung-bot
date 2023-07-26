@@ -8,11 +8,12 @@ use crate::{
 };
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
-use teloxide::{prelude::*, utils::command::BotCommands};
+use teloxide::{prelude::*, types::KeyboardRemove, utils::command::BotCommands};
 
 pub async fn help(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
     log::info!("help by chat {}", msg.chat.id);
     bot.send_message(msg.chat.id, Command::descriptions().to_string())
+        .reply_markup(KeyboardRemove::default())
         .await?;
     dialogue.reset().await.unwrap();
     Ok(())
@@ -21,6 +22,7 @@ pub async fn help(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
 pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
     log::info!("start by chat {}", msg.chat.id);
     bot.send_message(msg.chat.id, TextMessage::Start.to_string())
+        .reply_markup(KeyboardRemove::default())
         .await?;
     dialogue.reset().await.unwrap();
     Ok(())
@@ -29,6 +31,7 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
 pub async fn cancel(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
     log::info!("cancel by chat {}", msg.chat.id);
     bot.send_message(msg.chat.id, TextMessage::Cancel.to_string())
+        .reply_markup(KeyboardRemove::default())
         .await?;
     dialogue.reset().await.unwrap();
     Ok(())
@@ -104,7 +107,7 @@ pub async fn edit_phone(bot: Bot, dialogue: MyDialogue, pool: Pool<Postgres>) ->
 
 pub async fn edit_email(bot: Bot, dialogue: MyDialogue, pool: Pool<Postgres>) -> Result<()> {
     log::info!("edit_email by chat {}", dialogue.chat_id());
-    update_dialogue(State::ReceiveEmail(false), bot, dialogue, &pool).await?;
+    update_dialogue(State::ReceiveEmail(false, None), bot, dialogue, &pool).await?;
     Ok(())
 }
 

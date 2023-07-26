@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
 Soll ich dich anmelden?"#
             ),
         )
-        .reply_markup(signup_keyboard(course_today.id))
+        .reply_markup(signup_keyboard())
         .await?;
 
         participant
@@ -81,7 +81,10 @@ Soll ich dich anmelden?"#
 
         storage
             .clone()
-            .update_dialogue(ChatId(participant.id), State::ReceiveSignupResponse)
+            .update_dialogue(
+                ChatId(participant.id),
+                State::ReceiveSignupResponse(course_today.id),
+            )
             .await
             .unwrap();
 

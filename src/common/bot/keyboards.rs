@@ -1,65 +1,56 @@
 use crate::models::{gender::Gender, signup::SignupRequest, status::Status};
 use strum::{EnumProperty, IntoEnumIterator};
-use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, KeyboardMarkup};
 
-pub fn gender_keyboard() -> InlineKeyboardMarkup {
-    let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
+pub fn gender_keyboard() -> KeyboardMarkup {
+    let mut keyboard: Vec<Vec<KeyboardButton>> = vec![];
 
-    let row = Gender::iter()
-        .map(|gender| {
-            InlineKeyboardButton::callback(
-                gender
-                    .get_str("pretty")
-                    .unwrap_or_else(|| panic!("Better set that enum prop")),
-                gender.to_string(),
-            )
-        })
-        .collect();
-    keyboard.push(row);
-
-    InlineKeyboardMarkup::new(keyboard)
-}
-
-pub fn status_keyboard() -> InlineKeyboardMarkup {
-    let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
-
-    for status in Status::iter().rev() {
-        let row = vec![InlineKeyboardButton::callback(
-            status
+    for gender in Gender::iter() {
+        let row = vec![KeyboardButton::new(
+            gender
                 .get_str("pretty")
                 .unwrap_or_else(|| panic!("Better set that enum prop")),
-            status.to_string(),
         )];
         keyboard.push(row);
     }
 
-    InlineKeyboardMarkup::new(keyboard)
+    KeyboardMarkup::new(keyboard)
+        .resize_keyboard(true)
+        .one_time_keyboard(true)
 }
 
-pub fn signup_keyboard(course_id: i64) -> InlineKeyboardMarkup {
-    let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
-    let yes_answer = SignupRequest {
-        course_id,
-        answer: true,
-    };
-    let no_answer = SignupRequest {
-        course_id,
-        answer: false,
-    };
+pub fn status_keyboard() -> KeyboardMarkup {
+    let mut keyboard: Vec<Vec<KeyboardButton>> = vec![];
 
-    let row = vec![
-        InlineKeyboardButton::callback(
-            "Aber sowas von!",
-            serde_json::to_string(&yes_answer).unwrap_or_else(|err| panic!("{err}")),
-        ),
-        InlineKeyboardButton::callback(
-            "Heute nicht.",
-            serde_json::to_string(&no_answer).unwrap_or_else(|err| panic!("{err}")),
-        ),
-    ];
-    keyboard.push(row);
+    for status in Status::iter() {
+        let row = vec![KeyboardButton::new(
+            status
+                .get_str("pretty")
+                .unwrap_or_else(|| panic!("Better set that enum prop")),
+        )];
+        keyboard.push(row);
+    }
 
-    InlineKeyboardMarkup::new(keyboard)
+    KeyboardMarkup::new(keyboard)
+        .resize_keyboard(true)
+        .one_time_keyboard(true)
+}
+
+pub fn signup_keyboard() -> KeyboardMarkup {
+    let mut keyboard: Vec<Vec<KeyboardButton>> = vec![];
+
+    for signup_request in SignupRequest::iter() {
+        let row = vec![KeyboardButton::new(
+            signup_request
+                .get_str("pretty")
+                .unwrap_or_else(|| panic!("Better set that enum prop")),
+        )];
+        keyboard.push(row);
+    }
+
+    KeyboardMarkup::new(keyboard)
+        .resize_keyboard(true)
+        .one_time_keyboard(true)
 }
 
 pub fn no_answer_keyboard() -> InlineKeyboardMarkup {
