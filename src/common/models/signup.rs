@@ -1,19 +1,25 @@
 use crate::{http::request_document, models::participant::Participant};
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use encoding::{all::ISO_8859_1, Encoding};
 use form_urlencoded::byte_serialize;
+use regex::Regex;
 use reqwest::RequestBuilder;
 use scraper::{ElementRef, Html};
 use strum::{Display, EnumIter, EnumProperty, EnumString};
 
-#[derive(Clone, Debug, Default, Display, EnumString, sqlx::Type)]
+#[derive(Clone, Debug, Display, EnumString, sqlx::Type)]
 #[sqlx(type_name = "signup_status")]
 pub enum SignupStatus {
-    #[default]
-    Uninformed,
     Notified,
     SignedUp,
     Rejected,
+}
+
+#[derive(Clone, Debug)]
+pub struct Signup {
+    pub participant_id: i64,
+    pub course_id: i64,
+    pub status: SignupStatus,
 }
 
 #[derive(Clone, Debug, Display, EnumIter, EnumProperty)]
@@ -31,6 +37,7 @@ pub async fn signup(participant: &Participant, course_id: i64) -> Result<()> {
     let form_url = format!("https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi?Kursid={course_id}");
 
     // Step 1: Get the signup page that contains session specific data
+    log::info!("step 1");
     let request = client.get(&form_url);
     let response = request_document(request).await?;
     // We need a scope here... https://github.com/causal-agent/scraper/issues/75#issuecomment-1076997293
@@ -46,6 +53,7 @@ pub async fn signup(participant: &Participant, course_id: i64) -> Result<()> {
     };
 
     // Step 2: Submit the initial form and get the user confirmation page in response
+    log::info!("step 2");
     let mut request = client
         .post(SIGNUP_URL)
         .header("Referer", &form_url)
@@ -63,16 +71,19 @@ pub async fn signup(participant: &Participant, course_id: i64) -> Result<()> {
     };
 
     // Step 3: Finalize the signup
-    dbg!(&body);
+    log::info!("step 3");
     let mut request = client
         .post(SIGNUP_URL)
         .header("Referer", SIGNUP_URL)
         .body(body);
     request = add_headers(request);
     let response = request_document(request).await?;
-    dbg!(&response);
-
-    Ok(())
+    let re = Regex::new(r"Sie haben sich verbindlich für das Angebot Nr. \d+ angemeldet.").unwrap();
+    if re.is_match(response.as_str()) {
+        Ok(())
+    } else {
+        Err(eyre!("unbekannter Fehler"))
+    }
 }
 
 fn parse_form(document: &Html) -> ElementRef {

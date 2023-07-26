@@ -4,7 +4,7 @@ use crate::{
         schema::{Command, MyDialogue, State},
         text_messages::TextMessage,
     },
-    models::participant::Participant,
+    models::{course::Course, participant::Participant, signup::SignupStatus},
 };
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
@@ -67,6 +67,58 @@ pub async fn show_data(
         .reply_markup(KeyboardRemove::default())
         .await?;
     dialogue.reset().await.unwrap();
+    Ok(())
+}
+
+pub async fn redo_signup(
+    bot: Bot,
+    dialogue: MyDialogue,
+    msg: Message,
+    pool: Pool<Postgres>,
+) -> Result<()> {
+    log::info!("redo_signup by chat {}", msg.chat.id);
+    match Course::today(&pool).await? {
+        Some(course) => {
+            let participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
+            match participant.signup(&pool, course.id).await? {
+                Some(signup) => match signup.status {
+                    SignupStatus::SignedUp => {
+                        bot.send_message(msg.chat.id, "Du bist bereits angemeldet. Um dich abzumelden, musst du beim UniSport anrufen.").await?;
+                    }
+                    _ => {
+                        update_dialogue(
+                            State::ReceiveSignupResponse(course.id),
+                            bot,
+                            dialogue,
+                            &pool,
+                        )
+                        .await
+                        .unwrap();
+                    }
+                },
+                None => {
+                    update_dialogue(
+                        State::ReceiveSignupResponse(course.id),
+                        bot,
+                        dialogue,
+                        &pool,
+                    )
+                    .await
+                    .unwrap();
+                }
+            }
+        }
+        None => {
+            bot.send_message(
+                msg.chat.id,
+                "Für heute habe ich leider keine Kurse gefunden.",
+            )
+            .reply_markup(KeyboardRemove::default())
+            .await?;
+            dialogue.reset().await.unwrap();
+        }
+    };
+
     Ok(())
 }
 

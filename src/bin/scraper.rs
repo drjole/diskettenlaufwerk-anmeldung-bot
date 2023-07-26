@@ -5,6 +5,7 @@ use common::{
     bot::{
         keyboards::signup_keyboard,
         schema::{MyStorage, State},
+        text_messages::TextMessage,
     },
     models::{course::Course, participant::Participant, signup::SignupStatus},
 };
@@ -64,13 +65,7 @@ async fn main() -> Result<()> {
         log::info!("informing participant {}", participant.id);
         bot.send_message(
             ChatId(participant.id),
-            format!(
-                r#"Heute ist Frisbee-Zeit!
-
-{course_today}
-
-Soll ich dich anmelden?"#
-            ),
+            TextMessage::SignupResponse(course_today.clone()).to_string(),
         )
         .reply_markup(signup_keyboard())
         .await?;

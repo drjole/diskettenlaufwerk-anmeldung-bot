@@ -1,4 +1,9 @@
-use crate::models::{course::Course, gender::Gender, signup::SignupStatus, status::Status};
+use crate::models::{
+    course::Course,
+    gender::Gender,
+    signup::{Signup, SignupStatus},
+    status::Status,
+};
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use strum::EnumProperty;
@@ -78,6 +83,22 @@ impl Participant {
             course.id,
         ).fetch_all(pool).await?;
         Ok(participants)
+    }
+
+    pub async fn signup(&self, pool: &Pool<Postgres>, course_id: i64) -> Result<Option<Signup>> {
+        let signup = sqlx::query_as!(
+            Signup,
+            r#"
+            SELECT participant_id, course_id, status as "status: _"
+            FROM signups
+            WHERE participant_id = $1 AND course_id = $2
+            "#,
+            self.id,
+            course_id
+        )
+        .fetch_optional(pool)
+        .await?;
+        Ok(signup)
     }
 
     pub async fn update(&self, pool: &Pool<Postgres>) -> Result<()> {

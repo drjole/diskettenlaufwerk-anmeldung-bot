@@ -1,0 +1,345 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+        <head>
+                <meta http-equiv="Expires" content="0">
+                <meta http-equiv="cache-control" content="no-cache">
+                <meta http-equiv="Pragma" content="no-cache">
+
+<title>HSP Anmeldung</title>
+<script language='JavaScript' type="text/javascript">
+        function EingabeOK(string)
+  {
+        if (!string) return false;
+        var iChars = "^*\"<>[]%{}`'$";
+        for (var i = 0; i < string.length; i++)
+          {
+                if (iChars.indexOf(string.charAt(i)) != -1) return false;
+          };
+        return true;
+  }
+        function grossklein(string) {
+                var klein=0;
+                var gross=0;
+                var len=string.length;
+                for (var i = 0; i < len; i++)  {
+                        var ch=string.charAt(i);
+                        if (ch == ch.toLowerCase()) { klein++ } else { gross++ }
+                };
+                if ((gross<1) || (klein<1) || (gross>klein)) {
+                        return false;
+                }
+                return true;
+        }
+
+        function chkFormular(){
+        document.getElementById("l_adr").style.display="";
+
+        if((document.Formular.Geschlecht[0].checked == false) &&
+                        (document.Formular.Geschlecht[1].checked == false) &&
+                        (document.Formular.Geschlecht[2].checked == false) ) {
+                document.Formular.Geschlecht[0].focus();
+                document.getElementById("l_Geschlecht").className="warn";
+                return false;
+        }
+        document.getElementById("l_Geschlecht").className="";
+
+        if(!EingabeOK(document.Formular.Vorname.value)||(!grossklein(document.Formular.Vorname.value))||(document.Formular.Vorname.value.indexOf('.') > -1)) {
+                document.Formular.Vorname.focus();
+                document.getElementById("l_Vorname").className="warn";
+        return false;
+        }
+        document.getElementById("l_Vorname").className="";
+
+        if(!EingabeOK(document.Formular.Name.value)||(!grossklein(document.Formular.Name.value))||(document.Formular.Name.value.indexOf('.') > 0)){
+                document.Formular.Name.focus();
+                document.getElementById("l_Name").className="warn";
+        return false;
+        }
+        document.getElementById("l_Name").className="";
+
+        if(!EingabeOK(document.Formular.Strasse.value)) {
+                document.Formular.Strasse.focus();
+                document.getElementById("l_Strasse").className="warn";
+                return false;
+        }
+        document.getElementById("l_Strasse").className="";
+
+        var chkZ=0;
+        for(var i=0;i<5;++i)
+        if(document.Formular.Ort.value.charAt(i) < "0"
+        || document.Formular.Ort.value.charAt(i) > "9")
+                chkZ = -1;
+        if(document.Formular.Ort.value.length < 7)
+                chkZ = -1;
+        if(!EingabeOK(document.Formular.Ort.value) || (chkZ == -1)){
+                document.Formular.Ort.focus();
+                document.getElementById("l_Ort").className="warn";
+                return false;
+        }
+        document.getElementById("l_Ort").className="";
+
+        if(document.Formular.Statusorig.selectedIndex == 0) {
+                document.Formular.Statusorig.focus();
+                document.getElementById("l_Statusorig").className="warn";
+                return false;
+        }
+        document.getElementById("l_Statusorig").className="";
+
+        if((document.Formular.Statusorig.selectedIndex <= 8) &&
+       (!EingabeOK(document.Formular.Matnr.value))) {
+                document.Formular.Matnr.focus();
+                document.getElementById("l_Matnr").className="warn";
+                return false;
+        }
+        document.getElementById("l_Matnr").className="";
+
+        if((document.Formular.Statusorig.selectedIndex > 8)
+        && (document.Formular.Statusorig.selectedIndex <= 9) &&
+       (!EingabeOK(document.Formular.Institut.value))) {
+                document.Formular.Institut.focus();
+                document.getElementById("l_Institut").className="warn";
+                return false;
+        }
+        document.getElementById("l_Institut").className="";
+
+        if((document.Formular.Mail.value != "") &&      (!EingabeOK(document.Formular.Mail.value) ||
+                                                (document.Formular.Mail.value.indexOf('@') < 1))){
+                document.Formular.Mail.focus();
+                document.getElementById("l_Mail").className="warn";
+                return false;
+        }
+        document.getElementById("l_Mail").className="";
+        document.getElementById("l_adr").style.display="none";
+
+        if(!EingabeOK(document.Formular.Tel.value)) {
+                document.Formular.Tel.focus();
+                document.getElementById("l_Tel").className="warn";
+                return false;
+        }
+        document.getElementById("l_Tel").className="";
+
+
+        return true;
+}
+</script>
+
+<style type="text/css">
+<!--
+        BODY,TD,B               {FONT-FAMILY:  verdana, arial, helvetica, sans-serif; FONT-SIZE:9pt;}
+        BODY {padding-left:220px;}
+        .head-a {COLOR: #003366;font-size:14pt;}
+        .anm_meldung {COLOR:#5E6E87; font-weight:bold; }
+        .anm_head  {COLOR:#5E6E87; FONT-SIZE:12pt; font-weight:bold;}
+        .anm_big  {FONT-SIZE:12pt; font-weight:bold;}
+        .anm_red  {font-weight:bold; color:#990000;}
+        .anm_ram { background-color:#e3e3c7;}
+        tr.warn {background-color:#AD0000; color:#ffffff; }
+
+        @media all {
+                input.sub {border: #737357 1px solid; color: #3b3b1f; background-color: #c7c78f;}
+                .anm {border: #cccccc 1px solid; width:363px }
+        }
+-->
+</style>
+
+</head>
+<body>
+<form action='/cgi/anmeldung.fcgi' name='Formular' onsubmit='return chkFormular()'  method='post'>
+<input type=hidden name='Kursid'   value='259319'>
+<input type=hidden name="Kursnr" value="170302">
+<input type=hidden name="Passwort" value="">
+<input type=hidden name='Phase'   value='3'>
+<input type=hidden name="Termin" value="">
+<input type=hidden name="formnr" value="">
+<input type=hidden name="k_tcode" value="1690386485">
+<input type=hidden name="k_pcode" value="c41a5fee77ebe5e83a875818ca329bfe">
+<table border="0" cellpadding="4" cellspacing="1" width=530>
+        <tr>
+                <td class=anm_ram height=50 colspan=2>
+                        <div class="head-a" align=center>UniSport</div>
+                </td>
+        </tr>
+        <tr>
+                <td colspan=2>&nbsp;</td>
+        </tr>
+        <tr>
+                <td valign="top">Angebot:</td>
+                <td>170302<br>
+                                <div class=anm_big>Ultimate Frisbee Level 2-3</div><br>
+                </td>
+        </tr>
+                <tr>
+                        <td valign="top">Termin:</td>
+                        <td><b>Mi  20:30-21:45</b>&nbsp;&nbsp;&nbsp; USZ-Kunstrasen<br>
+                        </td>
+                </tr>
+                <tr>
+                        <td valign="top">Zeitraum:</td>
+                        <td>26.07.23<br>
+                        </td>
+                </tr>
+                <tr>
+                        <td valign="top">Entgelt:</td>
+                        <td>
+                                <table border=0 cellspacing=0><tr>
+                                        <td align=right>
+                                                0,00 &euro;&nbsp;<br>
+                                                0,00 &euro;&nbsp;<br>
+                                                0,00 &euro;&nbsp;<br>
+                                                0,00 &euro;&nbsp;
+                                        </td>
+                                        <td>
+                                                für Kölner Studierende<br>
+                                                für Beschäftigte<br>
+                                                für Andere Studierende<br>
+                                                für Gäste       </td></tr></table>
+                        </td>
+                </tr>                <tr>
+                        <td valign="top">Hinweis:</td>
+                        <td><b><ul style="margin:0 0 0 1em; padding:0;"><li>noch ausreichend freie Plätze in diesem Angebot</li></ul></b></td>
+                </tr>
+                <tr>
+                        <td class=anm_ram height=30 colspan=2></td>
+                </tr>
+                <tr>
+                        <td colspan=2><div style='text-align:right'>* verbindliche Angaben</div>
+                                <div class=anm_red id=l_adr><br>Bitte ergänzen bzw. korrigieren Sie die markierten Felder!</div>
+                        </td>
+                </tr>
+                <tr id=l_Geschlecht>
+      <td>Geschlecht:*</td>
+      <td>
+                                <label for="weiblich" style="width:120px"><input type="radio" name="Geschlecht" value="W"
+                 id="weiblich" checked> weiblich</label>&nbsp;&nbsp;
+                                <label for="maennlich"><input type="radio" name="Geschlecht" value="M"
+                        id="maennlich" > männlich</label>
+                                <label for="divers"><input type="radio" name="Geschlecht" value="D"
+                        id="divers" > divers</label>
+          </td>
+        </tr>
+        <tr id=l_Vorname class=warn>
+      <td>Vorname:*</td>
+      <td>
+        <input class=anm type="text" size="29" maxlength=100 name="Vorname" value=""
+          title="geben Sie hier bitte ihren Vornamen vollständig ein">
+      </td>
+    </tr>
+    <tr id=l_Name>
+      <td>Familienname:*
+      </td>
+      <td>
+        <input class=anm type="text" size="29" maxlength=100 name="Name" value="Kerkloh"
+          title="geben Sie hier bitte ihren Nachnamen vollständig ein">
+      </td>
+    </tr>
+    <tr id=l_Strasse class=warn>
+      <td nowrap>Straße Nr:*</td>
+      <td >
+        <input class=anm type="text" size="29" maxlength=100 name="Strasse" value="">
+      </td>
+    </tr>
+    <tr id=l_Ort class=warn>
+      <td>PLZ Ort:*</td>
+      <td>
+        <input class=anm type="text" size="29" maxlength=100 name="Ort" value="">
+      </td>
+    </tr>
+    <tr id=l_Statusorig class=warn>
+      <td valign="top">Status:* </td>
+      <td>
+                          <select class=anm name="Statusorig" size=1>
+                            <option value=""> Bitte wählen Sie aus<option class="req0" value="S-UNI">Stud. Universität zu Köln<option class="req0" value="S-DSHS">Stud. DSHS Köln<option class="req0" value="S-TH">Stud. TH Köln<option class="req0" value="S-MAC">Stud. Macromedia Köln<option class="req0" value="S-KHSM">Stud. Kunsthochschule für Medien<option class="req0" value="S-HMKW">Stud. Hochschule für Medien, Kommunikation und Wirtschaft<option class="req0" value="S-MH">Stud. Hochschule für Musik Köln<option class="req0" value="S-aH">Stud. anderer Hochschulen<option class="req0" value="B-SFH">Beschäft. staatl. Kölner Hochschulen <option class="req0" value="B-UK">Beschäft. UniKlinik Köln<option class="req0" value="B-KStW">Beschäft. KölnerStudierendenwerk<option class="req0" value="Alumni">Mitglied von KölnAlumni<option class="req0" value="A-Uni">Azubi Uni Köln<option class="req0" value="A-UK">Azubi UniKlinik<option class="req0" value="A-KSTW">Azubi KölnerStudierendenwerk<option class="req0" value="Extern">Gast
+                        </select>
+      </td>
+        </tr>
+    <tr>
+      <td valign="top"> &nbsp;</td>
+      <td>
+            <table style="width:363px" cellspacing=0>
+              <tr>
+                <td colspan=3 nowrap>
+                    <b>- bei Studierenden:</b>
+                </td>
+              </tr>
+              <tr id=l_Matnr>
+                <td  width=20>&nbsp;</td>
+                <td>Matrikel-Nr.:*</td>
+                <td align=right>
+                                                        <input class=anm type="text" size="10" style="width:200px" maxLength=20 name="Matnr" value="11135326"></td>
+              </tr>
+              <tr>
+                <td colspan=3 nowrap>
+                  <b>- bei Beschäftigten:</b>
+                </td>
+              </tr>
+              <tr id=l_Institut>
+                <td width=20>&nbsp;</td>
+                <td>dienstl. Telefonnr:*</td>
+                <td align=right>
+                                                        <input class=anm type="text" size="10" style="width:200px" maxlength=100 name="Institut" value=""></td>
+              </tr>
+            </table>
+        </td>
+    </tr>
+    <tr id=l_Mail>
+      <td valign="baseline">E-Mail:</td>
+      <td>
+        <input class=anm type="text" size="29" maxlength=100 name="Mail" value=""><div style="font-size:8pt">
+                                Bitte geben Sie Ihre E-Mail Adresse an, damit wir Sie ggf. erreichen können.
+                                Achten Sie unbedingt auf die richtige Schreibweise!</div>
+      </td>
+    </tr>
+    <tr id=l_Tel>
+      <td>Telefon:*</td>
+      <td>
+        <input class=anm type="text" size="20" maxlength=40 name="Tel" value=""><div style="font-size:8pt">
+                                Bitte geben Sie unbedingt Ihre Handynummer oder eine <br>
+                                Telefonnummer an, unter der Sie häufig erreichbar sind,<br>
+                                damit wir Sie bei wichtigen Informationen,      wie z.B. Kursausfällen<br>
+                                oder Verlegungen, sofort benachrichtigen können.</div>
+      </td>
+    </tr>
+<!--
+    <tr >
+      <td valign="baseline">Hochschulsport Infoletter:</td>
+      <td>
+        <table border="0" align="left" cellspacing="0" width="363">
+          <tr>
+            <td nowrap width="140">
+              <label for="info_ja"><input type="radio" name="Newsletter" value="1"
+                 id="info_ja" checked> ja, gewünscht</label>&nbsp;&nbsp;
+            </td>
+            <td nowrap>
+                <label for="info_nein"><input type="radio" name="Newsletter" value="0"
+                        id="info_nein"> nein, nicht gewünscht</label>
+            </td>
+          </tr>
+                  </table>
+      </td>
+    </tr>
+-->
+        <tr>
+                <td class=anm_ram height=20 colspan=2></td>
+        </tr>
+        <tr>
+                <td colspan='2' style="background-color: #f1f1e3;">
+                        Die <a href="http://unisport.koeln/ueberblick/index_ger.html" target="_blank">Anmelde-
+                        und Teilnahmebedingungen</a> habe ich gelesen und akzeptiert!<br>
+                        Mir ist bekannt, daß die Daten dieser Anmeldung elektronisch gespeichert werden.
+                        <br><br>
+                        <div style="float:left;">
+          <input class=sub type="reset" value="Abbrechen, nicht anmelden !" name="reset" onClick='self.close()'>
+                        </div>
+                        <div style="float:right;">
+                                <input class=sub type="submit" value="weiter zur Buchung" name="submit">
+                        </div>
+                        <br><br>
+                </td>
+        </tr>
+        <tr>
+                <td class=anm_ram height=30 colspan=2>&nbsp;</td>
+        </tr>
+</table>
+</form>
+</body>
+</html>

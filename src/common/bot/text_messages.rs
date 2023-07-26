@@ -1,4 +1,4 @@
-use crate::models::participant::Participant;
+use crate::models::{course::Course, participant::Participant};
 use std::fmt::Display;
 
 pub enum TextMessage {
@@ -6,6 +6,7 @@ pub enum TextMessage {
     Cancel,
     ShowData(Participant),
     EnterDataComplete,
+    SignupResponse(Course),
 }
 
 impl Display for TextMessage {
@@ -38,6 +39,14 @@ Warnung: Ich überprüfe deine Daten in keinster Weise auf Echtheit oder Korrekt
 Wenn du deine Daten ändern willst, nutze die /edit... Befehle. Diese findest du auch, wenn du dir deine Daten mittels /show_data anzeigen lässt.
 
 Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antworten und dich anmelden lassen."#
+            ),
+            TextMessage::SignupResponse(course) => write!(
+                f,
+                r#"Heute ist Frisbee-Zeit!
+
+{course}
+
+Soll ich dich anmelden?"#
             ),
         }
     }

@@ -3,13 +3,16 @@ use crate::{
         keyboards::{gender_keyboard, status_keyboard},
         schema::{MyDialogue, State},
     },
-    models::participant::Participant,
+    models::{course::Course, participant::Participant},
 };
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{prelude::*, types::KeyboardRemove};
 
-use super::keyboards::no_answer_keyboard;
+use super::{
+    keyboards::{no_answer_keyboard, signup_keyboard},
+    text_messages::TextMessage,
+};
 
 pub async fn dialogue_state(dialogue: &MyDialogue) -> State {
     dialogue.get().await.unwrap().unwrap()
@@ -22,28 +25,31 @@ pub async fn update_dialogue(
     pool: &Pool<Postgres>,
 ) -> Result<()> {
     let participant = Participant::find_by_id(pool, dialogue.chat_id().0).await?;
-    let message = match new_state {
-        State::Default => "",
-        State::ReceiveSignupResponse(_) => "",
-        State::ReceiveGivenName(_) => "Bitte gib deinen Vornamen ein.",
-        State::ReceiveLastName(_) => "Bitte gib deinen Nachnamen ein.",
-        State::ReceiveGender(_) => "Bitte wähle dein Geschlecht aus.",
+    let message: String = match new_state {
+        State::Default => "".into(),
+        State::ReceiveSignupResponse(course_id) => {
+            let course = Course::find_by_id(pool, course_id).await?.unwrap();
+            TextMessage::SignupResponse(course).to_string()
+        }
+        State::ReceiveGivenName(_) => "Bitte gib deinen Vornamen ein.".into(),
+        State::ReceiveLastName(_) => "Bitte gib deinen Nachnamen ein.".into(),
+        State::ReceiveGender(_) => "Bitte wähle dein Geschlecht aus.".into(),
         State::ReceiveStreet(_) => {
-            "Bitte gib deine Straße und deine Hausnummer ein.\n\nBeispiel: Musterstr. 123"
+            "Bitte gib deine Straße und deine Hausnummer ein.\n\nBeispiel: Musterstr. 123".into()
         }
         State::ReceiveCity(_) => {
-            "Bitte gib deine Postleitzahl und deinen Ort ein.\n\nBeispiel: 50678 Köln"
+            "Bitte gib deine Postleitzahl und deinen Ort ein.\n\nBeispiel: 50678 Köln".into()
         }
-        State::ReceivePhone(_) => "Bitte gib deine Telefonnummer ein.",
-        State::ReceiveEmail(_, _) => "Bitte gib deine E-Mail-Adresse ein.",
-        State::ReceiveStatus(_) => "Bitte wähle deinen Status aus.",
+        State::ReceivePhone(_) => "Bitte gib deine Telefonnummer ein.".into(),
+        State::ReceiveEmail(_, _) => "Bitte gib deine E-Mail-Adresse ein.".into(),
+        State::ReceiveStatus(_) => "Bitte wähle deinen Status aus.".into(),
         State::ReceiveStatusRelatedInfo(_) => {
             if participant.is_student() {
-                "Bitte gib deine Matrikelnummer ein."
+                "Bitte gib deine Matrikelnummer ein.".into()
             } else if participant.is_employed_at_cgn_uni_related_thing() {
-                "Bitte gib deine dienstliche Telefonnummer ein."
+                "Bitte gib deine dienstliche Telefonnummer ein.".into()
             } else {
-                "this is ignored later!"
+                "this is ignored later!".into()
             }
         }
     };
@@ -80,6 +86,11 @@ pub async fn update_dialogue(
                 .await?;
                 return Ok(());
             }
+        }
+        State::ReceiveSignupResponse(_) => {
+            bot.send_message(dialogue.chat_id(), message)
+                .reply_markup(signup_keyboard())
+                .await?;
         }
         _ => {
             bot.send_message(dialogue.chat_id(), message)

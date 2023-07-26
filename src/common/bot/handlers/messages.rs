@@ -349,11 +349,18 @@ pub async fn receive_signup_response(
                 bot.send_message(msg.chat.id, "Ok, einen Moment bitte...")
                     .reply_markup(KeyboardRemove::default())
                     .await?;
-                signup(&participant, course_id).await?;
-                participant
-                    .set_signup_status(&pool, course_id, SignupStatus::SignedUp)
-                    .await?;
-                bot.send_message(msg.chat.id, "Das sollte geklappt haben! Schau zur Sicherheit aber noch in dein E-Mail-Postfach.").await?;
+                match signup(&participant, course_id).await {
+                    Ok(_) => {
+                        participant
+                            .set_signup_status(&pool, course_id, SignupStatus::SignedUp)
+                            .await?;
+                        bot.send_message(msg.chat.id, "Das sollte geklappt haben! Schau zur Sicherheit aber noch in dein E-Mail-Postfach.").await?;
+                    }
+                    Err(err) => {
+                        bot.send_message(msg.chat.id, format!("Fehler bei der Anmeldung: {err}"))
+                            .await?;
+                    }
+                };
             }
             SignupRequest::Reject => {
                 bot.send_message(msg.chat.id, "Ok, dann vielleicht beim nächsten Mal!")

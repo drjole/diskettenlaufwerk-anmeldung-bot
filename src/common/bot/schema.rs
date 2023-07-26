@@ -62,6 +62,8 @@ pub enum Command {
     EnterData,
     #[command(description = "Daten anzeigen/bearbeiten")]
     ShowData,
+    #[command(description = "Anmeldung wiederholen")]
+    RedoSignup,
     #[command(description = "Aktuelle Aktion abbrechen")]
     Cancel,
     #[command(description = "Vorname ändern")]
@@ -89,7 +91,7 @@ pub async fn start(pool: Pool<Postgres>, redis_url: String) -> Result<()> {
     bot.set_my_commands(
         Command::bot_commands()
             .into_iter()
-            .take(5)
+            .take(6)
             .collect::<Vec<BotCommand>>(),
     )
     .await?;
@@ -112,6 +114,7 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
         .branch(case![Command::Cancel].endpoint(handlers::cancel))
         .branch(case![Command::EnterData].endpoint(handlers::enter_data))
         .branch(case![Command::ShowData].endpoint(handlers::show_data))
+        .branch(case![Command::RedoSignup].endpoint(handlers::redo_signup))
         .branch(case![Command::EditGivenName].endpoint(handlers::edit_given_name))
         .branch(case![Command::EditLastName].endpoint(handlers::edit_last_name))
         .branch(case![Command::EditGender].endpoint(handlers::edit_gender))

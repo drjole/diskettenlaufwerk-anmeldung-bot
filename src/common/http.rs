@@ -7,5 +7,6 @@ pub async fn request_document(builder: RequestBuilder) -> Result<String> {
     dbg!(&response);
     sleep(Duration::from_secs(3)).await;
     let text = response.text().await?;
+    println!("{text}");
     Ok(text)
 }

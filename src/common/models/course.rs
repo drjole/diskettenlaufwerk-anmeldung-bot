@@ -6,7 +6,7 @@ use sqlx::{Pool, Postgres};
 use std::{collections::HashMap, fmt::Display};
 use url::Url;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Course {
     pub id: i64,
     pub start_time: NaiveDateTime,
@@ -33,6 +33,21 @@ impl Course {
         .execute(pool)
         .await?;
         Ok(())
+    }
+
+    pub async fn find_by_id(pool: &Pool<Postgres>, id: i64) -> Result<Option<Self>> {
+        let course = sqlx::query_as!(
+            Course,
+            r#"
+            SELECT id, start_time, end_time, level, location, trainer
+            FROM courses
+            WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_optional(pool)
+        .await?;
+        Ok(course)
     }
 
     pub async fn today(pool: &Pool<Postgres>) -> Result<Option<Self>> {
