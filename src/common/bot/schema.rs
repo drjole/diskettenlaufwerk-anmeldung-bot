@@ -58,12 +58,12 @@ pub enum Command {
     Help,
     #[command(description = "Starttext anzeigen")]
     Start,
-    #[command(description = "Aktuelle Aktion abbrechen")]
-    Cancel,
     #[command(description = "Daten eingeben")]
     EnterData,
     #[command(description = "Daten anzeigen/bearbeiten")]
     ShowData,
+    #[command(description = "Aktuelle Aktion abbrechen")]
+    Cancel,
     #[command(description = "Vorname ändern")]
     EditGivenName,
     #[command(description = "Nachname ändern")]

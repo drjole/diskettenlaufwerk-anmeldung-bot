@@ -31,9 +31,7 @@ pub fn status_keyboard() -> KeyboardMarkup {
         keyboard.push(row);
     }
 
-    KeyboardMarkup::new(keyboard)
-        .resize_keyboard(true)
-        .one_time_keyboard(true)
+    KeyboardMarkup::new(keyboard).one_time_keyboard(true)
 }
 
 pub fn signup_keyboard() -> KeyboardMarkup {

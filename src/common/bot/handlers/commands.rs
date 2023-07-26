@@ -64,6 +64,7 @@ pub async fn show_data(
     log::info!("show_data by chat {}", msg.chat.id);
     let participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     bot.send_message(msg.chat.id, TextMessage::ShowData(participant).to_string())
+        .reply_markup(KeyboardRemove::default())
         .await?;
     dialogue.reset().await.unwrap();
     Ok(())
