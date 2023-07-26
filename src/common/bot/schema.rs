@@ -128,6 +128,7 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
 
     let callback_query_handler = Update::filter_callback_query()
         .branch(case![State::ReceiveGender(in_dialogue)].endpoint(handlers::receive_gender))
+        .branch(case![State::ReceiveEmail(in_dialogue)].endpoint(handlers::receive_email_callback))
         .branch(case![State::ReceiveStatus(in_dialogue)].endpoint(handlers::receive_status))
         .branch(case![State::ReceiveSignupResponse].endpoint(handlers::receive_signup_response))
         .branch(dptree::endpoint(handlers::invalid_callback_query));

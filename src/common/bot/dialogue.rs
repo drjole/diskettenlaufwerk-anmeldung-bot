@@ -9,6 +9,8 @@ use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::prelude::*;
 
+use super::keyboards::no_answer_keyboard;
+
 pub async fn dialogue_state(dialogue: &MyDialogue) -> State {
     dialogue.get().await.unwrap().unwrap()
 }
@@ -50,6 +52,11 @@ pub async fn update_dialogue(
         State::ReceiveGender(_) => {
             bot.send_message(dialogue.chat_id(), message)
                 .reply_markup(gender_keyboard())
+                .await?;
+        }
+        State::ReceiveEmail(_) => {
+            bot.send_message(dialogue.chat_id(), message)
+                .reply_markup(no_answer_keyboard())
                 .await?;
         }
         State::ReceiveStatus(_) => {

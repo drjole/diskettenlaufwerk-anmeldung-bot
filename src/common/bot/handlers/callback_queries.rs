@@ -130,6 +130,29 @@ pub async fn receive_signup_response(
     Ok(())
 }
 
+pub async fn receive_email_callback(
+    bot: Bot,
+    dialogue: MyDialogue,
+    q: CallbackQuery,
+    pool: Pool<Postgres>,
+) -> Result<()> {
+    bot.answer_callback_query(q.id).await?;
+    let state = dialogue_state(&dialogue).await;
+    if state.is_in_dialogue() {
+        update_dialogue(State::ReceiveStatus(true), bot, dialogue, &pool)
+            .await
+            .unwrap();
+    } else {
+        bot.send_message(
+            dialogue.chat_id(),
+            "Eingabe der E-Mail-Adresse übersprungen.",
+        )
+        .await?;
+        update_dialogue(State::ReceiveStatus(false), bot, dialogue, &pool).await?;
+    }
+    Ok(())
+}
+
 pub async fn invalid_callback_query(
     bot: Bot,
     dialogue: MyDialogue,

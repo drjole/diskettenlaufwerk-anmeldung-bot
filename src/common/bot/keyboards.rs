@@ -38,11 +38,11 @@ pub fn status_keyboard() -> InlineKeyboardMarkup {
 
 pub fn signup_keyboard(course_id: i64) -> InlineKeyboardMarkup {
     let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
-    let yes_answer: SignupRequest = SignupRequest {
+    let yes_answer = SignupRequest {
         course_id,
         answer: true,
     };
-    let no_answer: SignupRequest = SignupRequest {
+    let no_answer = SignupRequest {
         course_id,
         answer: false,
     };
@@ -57,6 +57,15 @@ pub fn signup_keyboard(course_id: i64) -> InlineKeyboardMarkup {
             serde_json::to_string(&no_answer).unwrap_or_else(|err| panic!("{err}")),
         ),
     ];
+    keyboard.push(row);
+
+    InlineKeyboardMarkup::new(keyboard)
+}
+
+pub fn no_answer_keyboard() -> InlineKeyboardMarkup {
+    let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
+
+    let row = vec![InlineKeyboardButton::callback("Keine Angabe.", "no answer")];
     keyboard.push(row);
 
     InlineKeyboardMarkup::new(keyboard)
