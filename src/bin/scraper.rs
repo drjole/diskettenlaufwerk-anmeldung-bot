@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
         ),
         Err(err) => log::warn!("did not initialize dotenv: {err}"),
     }
-    pretty_env_logger::init();
+    pretty_env_logger::init_timed();
 
     log::info!("connecting to database");
     let pool = PgPoolOptions::new()

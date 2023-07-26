@@ -1,6 +1,6 @@
 use crate::http::request_document;
 use chrono::{NaiveDateTime, TimeZone};
-use chrono_tz::Europe::Berlin;
+use chrono_tz::Europe;
 use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use std::{collections::HashMap, fmt::Display};
@@ -160,13 +160,13 @@ impl Course {
                 .get("Kursid")
                 .ok_or_else(|| eyre!("no query param 'Kursid'"))?;
             let id: i64 = id_string.parse()?;
-            let start_time = Berlin
+            let start_time = Europe::Berlin
                 .datetime_from_str(
                     &format!("{date} {start_time_of_day}:00"),
                     "%d.%m.%Y %H:%M:%S",
                 )?
                 .naive_utc();
-            let end_time = Berlin
+            let end_time = Europe::Berlin
                 .datetime_from_str(&format!("{date} {end_time_of_day}:00"), "%d.%m.%Y %H:%M:%S")?
                 .naive_utc();
             let level = table_cells[table_headers
@@ -205,8 +205,14 @@ Bis: {}
 Bezeichnung: {}
 Ort: {}
 Kursleiter/In: {}"#,
-            self.start_time.format("%H:%M"),
-            self.end_time.format("%H:%M"),
+            self.start_time
+                .and_utc()
+                .with_timezone(&Europe::Berlin)
+                .format("%H:%M"),
+            self.end_time
+                .and_utc()
+                .with_timezone(&Europe::Berlin)
+                .format("%H:%M"),
             self.level,
             self.location,
             self.trainer

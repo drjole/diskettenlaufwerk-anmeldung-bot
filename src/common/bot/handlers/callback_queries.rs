@@ -116,13 +116,35 @@ pub async fn receive_signup_response(
             participant
                 .set_signup_status(&pool, signup_request.course_id, SignupStatus::Rejected)
                 .await?;
-            bot.send_message(dialogue.chat_id(), "Ok, dann beim nächsten Mal vielleicht!")
+            bot.send_message(dialogue.chat_id(), "Ok, dann vielleicht beim nächsten Mal!")
                 .await?;
         }
         dialogue.exit().await.unwrap();
     } else {
-        bot.send_message(dialogue.chat_id(), "Das habe ich nicht verstanden.")
-            .await?;
+        bot.send_message(
+            dialogue.chat_id(),
+            "Das habe ich nicht verstanden. Versuche es mit /help.",
+        )
+        .await?;
     }
+    Ok(())
+}
+
+pub async fn invalid_callback_query(
+    bot: Bot,
+    dialogue: MyDialogue,
+    q: CallbackQuery,
+) -> Result<()> {
+    log::info!(
+        "answering invalid callback query {} from chat {}",
+        q.id,
+        dialogue.chat_id()
+    );
+    bot.answer_callback_query(q.id).await?;
+    bot.send_message(
+        dialogue.chat_id(),
+        "Das habe ich nicht verstanden. Versuche es mit /help.",
+    )
+    .await?;
     Ok(())
 }
