@@ -70,13 +70,13 @@ pub async fn show_data(
     Ok(())
 }
 
-pub async fn redo_signup(
+pub async fn signup(
     bot: Bot,
     dialogue: MyDialogue,
     msg: Message,
     pool: Pool<Postgres>,
 ) -> Result<()> {
-    log::info!("redo_signup by chat {}", msg.chat.id);
+    log::info!("signup by chat {}", msg.chat.id);
     match Course::today(&pool).await? {
         Some(course) => {
             let participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
@@ -105,6 +105,9 @@ pub async fn redo_signup(
                     )
                     .await
                     .unwrap();
+                    participant
+                        .set_signup_status(&pool, course.id, SignupStatus::Notified)
+                        .await?;
                 }
             }
         }

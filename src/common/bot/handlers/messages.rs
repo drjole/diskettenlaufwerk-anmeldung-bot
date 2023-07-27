@@ -354,16 +354,19 @@ pub async fn receive_signup_response(
                         participant
                             .set_signup_status(&pool, course_id, SignupStatus::SignedUp)
                             .await?;
-                        bot.send_message(msg.chat.id, "Das sollte geklappt haben! Schau zur Sicherheit aber noch in dein E-Mail-Postfach.").await?;
+                        bot.send_message(msg.chat.id, "Das hat geklappt! Wenn du deine E-Mail-Adresse angegeben hast, findest du gleich eine Bestätigung in deinem Postfach.").await?;
                     }
                     Err(err) => {
-                        bot.send_message(msg.chat.id, format!("Fehler bei der Anmeldung: {err}"))
-                            .await?;
+                        bot.send_message(
+                            msg.chat.id,
+                            format!("Fehler bei der Anmeldung:\n\n{err}"),
+                        )
+                        .await?;
                     }
                 };
             }
             SignupRequest::Reject => {
-                bot.send_message(msg.chat.id, "Ok, dann vielleicht beim nächsten Mal!")
+                bot.send_message(msg.chat.id, "Ok, dann vielleicht beim nächsten Mal! Solltest du dich umentscheiden, kannst du den /signup Befehl nutzen, um dich doch noch anzumelden.")
                     .reply_markup(KeyboardRemove::default())
                     .await?;
                 participant

@@ -716,6 +716,7 @@ dependencies = [
  "encoding",
  "form_urlencoded",
  "itertools 0.11.0",
+ "lazy_static",
  "log",
  "pretty_env_logger",
  "regex",
