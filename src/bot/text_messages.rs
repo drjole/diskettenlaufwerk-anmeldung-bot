@@ -34,11 +34,14 @@ Warnung: Ich überprüfe deine Daten in keinster Weise auf Echtheit oder Korrekt
             ),
             TextMessage::EnterDataComplete => write!(
                 f,
-                r#"Super! Damit habe ich alle Daten, die ich brauche.
+                r#"Super {}
+
+Damit habe ich alle Daten, die ich brauche.
 
 Wenn du deine Daten ändern willst, nutze die /edit... Befehle. Diese findest du auch, wenn du dir deine Daten mittels /show_data anzeigen lässt.
 
-Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antworten und dich anmelden lassen."#
+Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antworten und dich anmelden lassen."#,
+                emojis::get_by_shortcode("tada").unwrap()
             ),
             TextMessage::SignupResponse(course) => write!(
                 f,
