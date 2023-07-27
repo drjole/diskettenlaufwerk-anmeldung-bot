@@ -17,7 +17,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Docker meta
-        id: bot_meta
+        id: meta
         uses: docker/metadata-action@v4
         with:
           images: ghcr.io/drjole/diskettenlaufwerk-anmeldung-bot
