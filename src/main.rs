@@ -1,7 +1,10 @@
 extern crate pretty_env_logger;
 
-use color_eyre::{eyre::eyre, Result};
-use common::{
+mod bot;
+pub mod http;
+mod models;
+
+use crate::{
     bot::{
         keyboards::signup_keyboard,
         schema::{MyStorage, State},
@@ -9,6 +12,7 @@ use common::{
     },
     models::{course::Course, participant::Participant, signup::SignupStatus},
 };
+use color_eyre::{eyre::eyre, Result};
 use sqlx::postgres::PgPoolOptions;
 use std::env;
 use teloxide::{
@@ -19,6 +23,42 @@ use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    match std::env::args().nth(1) {
+        Some(arg) => match arg.as_str() {
+            "bot" => run_bot().await,
+            "scraper" => run_scraper().await,
+            _ => Err(eyre!("invalid argument: {arg}")),
+        },
+        None => run_bot().await,
+    }
+}
+
+async fn run_bot() -> Result<()> {
+    match dotenv::dotenv() {
+        Ok(path) => log::info!(
+            "initialized environment from this file: {}",
+            path.to_str()
+                .ok_or_else(|| eyre!("could not convert path to dotenv file to str"))?
+        ),
+        Err(err) => log::warn!("did not initialize dotenv: {err}"),
+    }
+    pretty_env_logger::init_timed();
+
+    log::info!("connecting to database");
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&env::var("DATABASE_URL")?)
+        .await?;
+    sqlx::migrate!().run(&pool).await?;
+
+    let redis_url = env::var("REDIS_URL")?;
+    log::info!("starting bot");
+    bot::start(pool, redis_url).await?;
+
+    Ok(())
+}
+
+async fn run_scraper() -> Result<()> {
     match dotenv::dotenv() {
         Ok(path) => log::info!(
             "initialized environment from this file: {}",

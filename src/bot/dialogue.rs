@@ -1,3 +1,7 @@
+use crate::bot::{
+    keyboards::{no_answer_keyboard, signup_keyboard},
+    text_messages::TextMessage,
+};
 use crate::{
     bot::{
         keyboards::{gender_keyboard, status_keyboard},
@@ -8,11 +12,6 @@ use crate::{
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{prelude::*, types::KeyboardRemove};
-
-use super::{
-    keyboards::{no_answer_keyboard, signup_keyboard},
-    text_messages::TextMessage,
-};
 
 pub async fn dialogue_state(dialogue: &MyDialogue) -> State {
     dialogue.get().await.unwrap().unwrap()
@@ -51,6 +50,9 @@ pub async fn update_dialogue(
             } else {
                 "this is ignored later!".into()
             }
+        }
+        State::ReceiveDeleteConfirmation => {
+            "Bist du sicher? Antworte mit \"JA\", um deine Daten endgültig zu löschen.".into()
         }
     };
 

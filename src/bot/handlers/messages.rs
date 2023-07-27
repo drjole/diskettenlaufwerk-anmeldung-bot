@@ -384,3 +384,37 @@ pub async fn receive_signup_response(
     }
     Ok(())
 }
+
+pub async fn receive_delete_confirmation(
+    bot: Bot,
+    dialogue: MyDialogue,
+    msg: Message,
+    pool: Pool<Postgres>,
+) -> Result<()> {
+    match msg.text() {
+        Some(text) => {
+            if text == "JA" {
+                let mut participant = Participant::find_by_id(&pool, dialogue.chat_id().0).await?;
+                participant.delete(&pool).await?;
+                bot.send_message(dialogue.chat_id(), "Daten gelöscht.\n\nWenn du dich wieder anmelden möchtest, nutze den /enter_data Befehl.").await?;
+                dialogue.reset().await.unwrap();
+            } else {
+                bot.send_message(
+                    dialogue.chat_id(),
+                    "Deine Daten wurden <u>nicht</b> gelöscht.",
+                )
+                .parse_mode(teloxide::types::ParseMode::Html)
+                .await?;
+                dialogue.reset().await.unwrap();
+            }
+        }
+        None => {
+            bot.send_message(
+                dialogue.chat_id(),
+                "Das habe ich nicht verstanden. Versuche es mit /help.",
+            )
+            .await?;
+        }
+    }
+    Ok(())
+}

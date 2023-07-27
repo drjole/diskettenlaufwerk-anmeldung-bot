@@ -45,15 +45,6 @@ impl Participant {
         Ok(())
     }
 
-    pub async fn all(pool: &Pool<Postgres>) -> Result<Vec<Self>> {
-        let participants = sqlx::query_as!(Participant,
-        r#"
-        SELECT id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_related_info
-        FROM participants
-        "#).fetch_all(pool).await?;
-        Ok(participants)
-    }
-
     pub async fn find_by_id(pool: &Pool<Postgres>, id: i64) -> Result<Self> {
         let participant = sqlx::query_as!(Participant,
             r#"
@@ -155,10 +146,17 @@ impl Participant {
         Ok(())
     }
 
-    pub async fn delete(&self, pool: &Pool<Postgres>) -> Result<()> {
-        sqlx::query!(r#"DELETE FROM participants WHERE id = $1"#, self.id)
-            .execute(pool)
-            .await?;
+    pub async fn delete(&mut self, pool: &Pool<Postgres>) -> Result<()> {
+        self.given_name = None;
+        self.last_name = None;
+        self.gender = None;
+        self.street = None;
+        self.city = None;
+        self.phone = None;
+        self.email = None;
+        self.status = None;
+        self.status_related_info = None;
+        self.update(pool).await?;
         Ok(())
     }
 
@@ -223,8 +221,7 @@ impl Participant {
 
 impl std::fmt::Display for Participant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
+        let mut s = format!(
             r#"Vorname: {} (/edit_given_name)
 Nachname: {} (/edit_last_name)
 Geschlecht: {} (/edit_gender)
@@ -232,24 +229,32 @@ Straße: {} (/edit_street)
 Ort: {} (/edit_city)
 Telefonnummer: {} (/edit_phone)
 E-Mail-Adresse: {} (/edit_email)
-Status: {} (/edit_status)
-{}: {} (/edit_status_related_info)"#,
-            self.given_name.clone().unwrap_or_default(),
-            self.last_name.clone().unwrap_or_default(),
-            self.gender.clone().map_or(String::new(), |g| g
+Status: {} (/edit_status)"#,
+            self.given_name.clone().unwrap_or("<i>leer</i>".into()),
+            self.last_name.clone().unwrap_or("<i>leer</i>".into()),
+            self.gender.clone().map_or("<i>leer</i>".into(), |g| g
                 .get_str("pretty")
                 .unwrap_or_else(|| panic!("Better set that enum prop"))
                 .to_string()),
-            self.street.clone().unwrap_or_default(),
-            self.city.clone().unwrap_or_default(),
-            self.phone.clone().unwrap_or_default(),
-            self.email.clone().unwrap_or_default(),
-            self.status.clone().map_or(String::new(), |s| s
+            self.street.clone().unwrap_or("<i>leer</i>".into()),
+            self.city.clone().unwrap_or("<i>leer</i>".into()),
+            self.phone.clone().unwrap_or("<i>leer</i>".into()),
+            self.email.clone().unwrap_or("<i>leer</i>".into()),
+            self.status.clone().map_or("<i>leer</i>".into(), |s| s
                 .get_str("pretty")
                 .unwrap_or_else(|| panic!("Better set that enum prop"))
                 .to_string()),
-            self.status_related_info_name().unwrap_or_default(),
-            self.status_related_info.clone().unwrap_or_default()
-        )
+        );
+        if self.status.is_some() {
+            s.push_str(&format!(
+                "\n{}: {} (/edit_status_related_info)",
+                self.status_related_info_name()
+                    .unwrap_or("<i>leer</i>".into()),
+                self.status_related_info
+                    .clone()
+                    .unwrap_or("<i>leer</i>".into())
+            ))
+        }
+        write!(f, "{s}")
     }
 }

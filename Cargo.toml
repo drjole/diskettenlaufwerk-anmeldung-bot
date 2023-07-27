@@ -1,20 +1,9 @@
 [package]
-name = "frisbee-signup"
+name = "diskettenlaufwerk-anmeldung-bot"
 version = "0.1.0"
 edition = "2021"
-default-run = "bot"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[[bin]]
-name = "bot"
-
-[[bin]]
-name = "scraper"
-
-[lib]
-name = "common"
-path = "src/common/lib.rs"
 
 [dependencies]
 chrono = "0.4.24"

@@ -1,5 +1,3 @@
-use std::{fs, time::SystemTime};
-
 use color_eyre::{eyre::eyre, Result};
 use reqwest::RequestBuilder;
 

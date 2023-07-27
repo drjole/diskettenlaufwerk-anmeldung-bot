@@ -2,10 +2,8 @@ version: "3"
 
 services:
   bot:
-    build:
-      context: .
-      args:
-        - BINARY=bot
+    build: .
+    command: bot
     depends_on:
       - db
       - redis
@@ -15,10 +13,8 @@ services:
       REDIS_URL: "redis://redis:6379"
       TELOXIDE_TOKEN: "${TELOXIDE_TOKEN}"
   scraper:
-    build:
-      context: .
-      args:
-        - BINARY=scraper
+    build: .
+    command: scraper
     depends_on:
       - db
       - redis

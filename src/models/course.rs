@@ -1,10 +1,11 @@
-use crate::http::request_document;
 use chrono::{NaiveDateTime, TimeZone};
 use chrono_tz::Europe;
 use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use std::{collections::HashMap, fmt::Display};
 use url::Url;
+
+use crate::http::request_document;
 
 #[derive(Debug, Clone)]
 pub struct Course {

@@ -64,6 +64,7 @@ pub async fn show_data(
     log::info!("show_data by chat {}", msg.chat.id);
     let participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     bot.send_message(msg.chat.id, TextMessage::ShowData(participant).to_string())
+        .parse_mode(teloxide::types::ParseMode::Html)
         .reply_markup(KeyboardRemove::default())
         .await?;
     dialogue.reset().await.unwrap();
@@ -122,6 +123,14 @@ pub async fn signup(
         }
     };
 
+    Ok(())
+}
+
+pub async fn delete(bot: Bot, dialogue: MyDialogue, pool: Pool<Postgres>) -> Result<()> {
+    log::info!("delete by chat {}", dialogue.chat_id());
+    update_dialogue(State::ReceiveDeleteConfirmation, bot, dialogue, &pool)
+        .await
+        .unwrap();
     Ok(())
 }
 

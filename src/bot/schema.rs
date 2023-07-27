@@ -1,4 +1,3 @@
-use crate::bot::handlers;
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{
@@ -11,9 +10,10 @@ use teloxide::{
     utils::command::BotCommands,
 };
 
+use crate::bot::handlers;
+
 pub type MyDialogue = Dialogue<State, ErasedStorage<State>>;
 pub type MyStorage = std::sync::Arc<ErasedStorage<State>>;
-pub type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 #[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
 pub enum State {
@@ -29,6 +29,7 @@ pub enum State {
     ReceiveStatus(bool),
     ReceiveStatusRelatedInfo(bool),
     ReceiveSignupResponse(i64),
+    ReceiveDeleteConfirmation,
 }
 
 impl State {
@@ -43,7 +44,9 @@ impl State {
             | Self::ReceiveEmail(in_dialogue, _)
             | Self::ReceiveStatus(in_dialogue)
             | Self::ReceiveStatusRelatedInfo(in_dialogue) => in_dialogue,
-            Self::Default | Self::ReceiveSignupResponse(_) => &false,
+            Self::Default | Self::ReceiveSignupResponse(_) | Self::ReceiveDeleteConfirmation => {
+                &false
+            }
         }
     }
 }
@@ -54,18 +57,18 @@ impl State {
     rename_rule = "snake_case"
 )]
 pub enum Command {
-    #[command(description = "Hilfe anzeigen")]
-    Help,
-    #[command(description = "Starttext anzeigen")]
-    Start,
-    #[command(description = "Daten eingeben")]
-    EnterData,
     #[command(description = "Daten anzeigen/bearbeiten")]
     ShowData,
     #[command(description = "Anmeldung starten")]
     Signup,
+    #[command(description = "Daten eingeben")]
+    EnterData,
+    #[command(description = "Daten löschen")]
+    Delete,
     #[command(description = "Aktuelle Aktion abbrechen")]
     Cancel,
+    #[command(description = "Hilfe anzeigen")]
+    Help,
     #[command(description = "Vorname ändern")]
     EditGivenName,
     #[command(description = "Nachname ändern")]
@@ -84,6 +87,8 @@ pub enum Command {
     EditStatus,
     #[command(description = "Matrikelnummer oder dienstliche Telefonnummer ändern")]
     EditStatusRelatedInfo,
+    #[command(description = "Starttext anzeigen")]
+    Start,
 }
 
 pub async fn start(pool: Pool<Postgres>, redis_url: String) -> Result<()> {
@@ -109,12 +114,12 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
     use dptree::case;
 
     let command_handler = teloxide::filter_command::<Command, _>()
-        .branch(case![Command::Help].endpoint(handlers::help))
-        .branch(case![Command::Start].endpoint(handlers::start))
-        .branch(case![Command::Cancel].endpoint(handlers::cancel))
-        .branch(case![Command::EnterData].endpoint(handlers::enter_data))
-        .branch(case![Command::ShowData].endpoint(handlers::show_data))
         .branch(case![Command::Signup].endpoint(handlers::signup))
+        .branch(case![Command::ShowData].endpoint(handlers::show_data))
+        .branch(case![Command::EnterData].endpoint(handlers::enter_data))
+        .branch(case![Command::Delete].endpoint(handlers::delete))
+        .branch(case![Command::Cancel].endpoint(handlers::cancel))
+        .branch(case![Command::Help].endpoint(handlers::help))
         .branch(case![Command::EditGivenName].endpoint(handlers::edit_given_name))
         .branch(case![Command::EditLastName].endpoint(handlers::edit_last_name))
         .branch(case![Command::EditGender].endpoint(handlers::edit_gender))
@@ -123,7 +128,8 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
         .branch(case![Command::EditPhone].endpoint(handlers::edit_phone))
         .branch(case![Command::EditEmail].endpoint(handlers::edit_email))
         .branch(case![Command::EditStatus].endpoint(handlers::edit_status))
-        .branch(case![Command::EditStatusRelatedInfo].endpoint(handlers::edit_status_related_info));
+        .branch(case![Command::EditStatusRelatedInfo].endpoint(handlers::edit_status_related_info))
+        .branch(case![Command::Start].endpoint(handlers::start));
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
@@ -144,6 +150,9 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
         .branch(
             case![State::ReceiveSignupResponse(course_id)]
                 .endpoint(handlers::receive_signup_response),
+        )
+        .branch(
+            case![State::ReceiveDeleteConfirmation].endpoint(handlers::receive_delete_confirmation),
         )
         .branch(dptree::endpoint(handlers::invalid));
 
