@@ -3,7 +3,7 @@ version: "3"
 services:
   bot:
     build: .
-    command: bot
+    command: /diskettenlaufwerk-anmeldung-bot bot
     depends_on:
       - db
       - redis
@@ -14,7 +14,7 @@ services:
       TELOXIDE_TOKEN: "${TELOXIDE_TOKEN}"
   scraper:
     build: .
-    command: scraper
+    command: /diskettenlaufwerk-anmeldung-bot scraper
     depends_on:
       - db
       - redis
