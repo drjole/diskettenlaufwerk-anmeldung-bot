@@ -42,11 +42,12 @@ Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antwort
             ),
             TextMessage::SignupResponse(course) => write!(
                 f,
-                r#"Heute ist Frisbee-Zeit!
+                r#"Heute ist Frisbee-Zeit! {}
 
 {course}
 
-Soll ich dich anmelden?"#
+Soll ich dich anmelden?"#,
+                emojis::get_by_shortcode("flying_disc").unwrap()
             ),
         }
     }
