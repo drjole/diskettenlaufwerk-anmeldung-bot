@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, given_name, last_name, gender as \"gender: _\", street, city, phone, email, status as \"status: _\", status_related_info\n            FROM participants\n            WHERE id = $1\n            ",
+  "query": "\n            SELECT id, given_name, last_name, gender as \"gender: _\", street, city, phone, email, participants.status as \"status: _\", status_info\n            FROM participants\n            WHERE NOT EXISTS (\n                SELECT 1\n                FROM signups\n                WHERE participants.id = signups.participant_id AND signups.course_id = $1\n            )\n            ",
   "describe": {
     "columns": [
       {
@@ -85,7 +85,7 @@
       },
       {
         "ordinal": 9,
-        "name": "status_related_info",
+        "name": "status_info",
         "type_info": "Text"
       }
     ],
@@ -107,5 +107,5 @@
       true
     ]
   },
-  "hash": "16ceb9a37f6418428dae31647702c5cade7ca88b97003a7d105c2c1e6a5250b6"
+  "hash": "9b1405e98a5f9358935752aa196c0497d3143c294cb94f9b4c6f1d08ad0df201"
 }
