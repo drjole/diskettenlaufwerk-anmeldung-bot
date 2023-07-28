@@ -27,7 +27,7 @@ pub enum State {
     ReceivePhone(bool),
     ReceiveEmail(bool, Option<MessageId>),
     ReceiveStatus(bool),
-    ReceiveStatusRelatedInfo(bool),
+    ReceiveStatusInfo(bool),
     ReceiveSignupResponse(i64),
     ReceiveDeleteConfirmation,
 }
@@ -43,7 +43,7 @@ impl State {
             | Self::ReceivePhone(in_dialogue)
             | Self::ReceiveEmail(in_dialogue, _)
             | Self::ReceiveStatus(in_dialogue)
-            | Self::ReceiveStatusRelatedInfo(in_dialogue) => in_dialogue,
+            | Self::ReceiveStatusInfo(in_dialogue) => in_dialogue,
             Self::Default | Self::ReceiveSignupResponse(_) | Self::ReceiveDeleteConfirmation => {
                 &false
             }
@@ -86,7 +86,7 @@ pub enum Command {
     #[command(description = "Status ändern")]
     EditStatus,
     #[command(description = "Matrikelnummer oder dienstliche Telefonnummer ändern")]
-    EditStatusRelatedInfo,
+    EditStatusInfo,
     #[command(description = "Starttext anzeigen")]
     Start,
 }
@@ -123,7 +123,7 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
         .branch(case![Command::EditPhone].endpoint(handlers::edit_phone))
         .branch(case![Command::EditEmail].endpoint(handlers::edit_email))
         .branch(case![Command::EditStatus].endpoint(handlers::edit_status))
-        .branch(case![Command::EditStatusRelatedInfo].endpoint(handlers::edit_status_related_info))
+        .branch(case![Command::EditStatusInfo].endpoint(handlers::edit_status_info))
         .branch(case![Command::Start].endpoint(handlers::start));
 
     let message_handler = Update::filter_message()
@@ -139,8 +139,7 @@ fn schema() -> UpdateHandler<color_eyre::Report> {
         )
         .branch(case![State::ReceiveStatus(in_dialogue)].endpoint(handlers::receive_status))
         .branch(
-            case![State::ReceiveStatusRelatedInfo(in_dialogue)]
-                .endpoint(handlers::receive_status_related_info),
+            case![State::ReceiveStatusInfo(in_dialogue)].endpoint(handlers::receive_status_info),
         )
         .branch(
             case![State::ReceiveSignupResponse(course_id)]

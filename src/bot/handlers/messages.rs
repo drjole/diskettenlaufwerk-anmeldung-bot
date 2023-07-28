@@ -262,14 +262,12 @@ pub async fn receive_status(
         participant.update(&pool).await?;
         let state = dialogue_utils::state(&dialogue).await;
         if state.is_in_dialogue() {
-            dialogue_utils::update(State::ReceiveStatusRelatedInfo(true), bot, dialogue, &pool)
-                .await?;
+            dialogue_utils::update(State::ReceiveStatusInfo(true), bot, dialogue, &pool).await?;
         } else {
             bot.send_message(dialogue.chat_id(), "Status geändert.")
                 .reply_markup(KeyboardRemove::default())
                 .await?;
-            dialogue_utils::update(State::ReceiveStatusRelatedInfo(false), bot, dialogue, &pool)
-                .await?;
+            dialogue_utils::update(State::ReceiveStatusInfo(false), bot, dialogue, &pool).await?;
         }
     } else {
         let keyboard = status_keyboard();
@@ -283,38 +281,33 @@ pub async fn receive_status(
     Ok(())
 }
 
-pub async fn receive_status_related_info(
+pub async fn receive_status_info(
     bot: Bot,
     msg: Message,
     dialogue: MyDialogue,
     pool: Pool<Postgres>,
 ) -> Result<()> {
-    log::info!("receive_status_related_info by chat {}", msg.chat.id);
+    log::info!("receive_status_info by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
-    let status_related_info_name = participant.status_related_info_name().unwrap_or_default();
+    let status_info_name = participant.status_info_name().unwrap_or_default();
     let state = dialogue_utils::state(&dialogue).await;
     match msg.text() {
         Some(text) => {
-            participant.status_related_info = Some(text.to_string());
+            participant.status_info = Some(text.to_string());
             participant.update(&pool).await?;
             if state.is_in_dialogue() {
                 bot.send_message(msg.chat.id, TextMessage::EnterDataComplete.to_string())
                     .await?;
             } else {
-                bot.send_message(
-                    msg.chat.id,
-                    format!("{status_related_info_name} geändert.",),
-                )
-                .await?;
+                bot.send_message(msg.chat.id, format!("{status_info_name} geändert.",))
+                    .await?;
             }
             dialogue.reset().await.unwrap();
         }
         None => {
             bot.send_message(
                 msg.chat.id,
-                format!(
-                    "Das habe ich nicht verstanden. Bitte gib deine {status_related_info_name} ein.",
-                ),
+                format!("Das habe ich nicht verstanden. Bitte gib deine {status_info_name} ein.",),
             )
             .await?;
         }

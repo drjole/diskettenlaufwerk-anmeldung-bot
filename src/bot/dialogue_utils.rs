@@ -42,7 +42,7 @@ pub async fn update(
         State::ReceivePhone(_) => "Bitte gib deine Telefonnummer ein.".into(),
         State::ReceiveEmail(_, _) => "Bitte gib deine E-Mail-Adresse ein.".into(),
         State::ReceiveStatus(_) => "Bitte wähle deinen Status aus.".into(),
-        State::ReceiveStatusRelatedInfo(_) => {
+        State::ReceiveStatusInfo(_) => {
             if participant.is_student() {
                 "Bitte gib deine Matrikelnummer ein.".into()
             } else if participant.is_employed_at_cgn_uni_related_thing() {
@@ -74,7 +74,7 @@ pub async fn update(
                 .reply_markup(status_keyboard())
                 .await?;
         }
-        State::ReceiveStatusRelatedInfo(_) => {
+        State::ReceiveStatusInfo(_) => {
             if participant.status.is_some() {
                 bot.send_message(dialogue.chat_id(), message)
                     .reply_markup(KeyboardRemove::default())

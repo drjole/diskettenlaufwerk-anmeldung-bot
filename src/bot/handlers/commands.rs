@@ -178,12 +178,8 @@ pub async fn edit_status(bot: Bot, dialogue: MyDialogue, pool: Pool<Postgres>) -
     Ok(())
 }
 
-pub async fn edit_status_related_info(
-    bot: Bot,
-    dialogue: MyDialogue,
-    pool: Pool<Postgres>,
-) -> Result<()> {
-    log::info!("edit_status_related_info by chat {}", dialogue.chat_id());
-    dialogue_utils::update(State::ReceiveStatusRelatedInfo(false), bot, dialogue, &pool).await?;
+pub async fn edit_status_info(bot: Bot, dialogue: MyDialogue, pool: Pool<Postgres>) -> Result<()> {
+    log::info!("edit_status_info by chat {}", dialogue.chat_id());
+    dialogue_utils::update(State::ReceiveStatusInfo(false), bot, dialogue, &pool).await?;
     Ok(())
 }
