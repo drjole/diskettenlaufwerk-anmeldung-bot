@@ -24,7 +24,7 @@ use tokio::time::{sleep, Duration};
 #[tokio::main]
 async fn main() -> Result<()> {
     match std::env::args().nth(1).as_deref() {
-        Some("bot") => run_bot().await,
+        Some("bot") | None => run_bot().await,
         Some("scraper") => run_scraper().await,
         _ => Err(eyre!("invalid argument")),
     }
@@ -91,8 +91,8 @@ async fn run_scraper() -> Result<()> {
             .await
             .unwrap()
             .unwrap();
-        // Only inform participants that are not currently entering data or doing something else.
-        if !matches!(state, State::Default) {
+        // Only inform participants in these states.
+        if !matches!(state, State::ReceiveSignupResponse(_) | State::Default) {
             continue;
         }
 
