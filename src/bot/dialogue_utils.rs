@@ -13,11 +13,11 @@ use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{prelude::*, types::KeyboardRemove};
 
-pub async fn dialogue_state(dialogue: &MyDialogue) -> State {
+pub async fn state(dialogue: &MyDialogue) -> State {
     dialogue.get().await.unwrap().unwrap()
 }
 
-pub async fn update_dialogue(
+pub async fn update(
     mut new_state: State,
     bot: Bot,
     dialogue: MyDialogue,
@@ -25,7 +25,7 @@ pub async fn update_dialogue(
 ) -> Result<()> {
     let participant = Participant::find_by_id(pool, dialogue.chat_id().0).await?;
     let message: String = match new_state {
-        State::Default => "".into(),
+        State::Default => String::new(),
         State::ReceiveSignupResponse(course_id) => {
             let course = Course::find_by_id(pool, course_id).await?.unwrap();
             TextMessage::SignupResponse(course).to_string()

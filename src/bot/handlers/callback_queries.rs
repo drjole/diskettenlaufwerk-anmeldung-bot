@@ -1,6 +1,6 @@
 use crate::{
     bot::{
-        dialogue::{dialogue_state, update_dialogue},
+        dialogue_utils::{self, update},
         schema::{MyDialogue, State},
     },
     models::participant::Participant,
@@ -16,7 +16,7 @@ pub async fn receive_email_callback(
     pool: Pool<Postgres>,
 ) -> Result<()> {
     bot.answer_callback_query(q.id).await?;
-    let message_id = match dialogue_state(&dialogue).await {
+    let message_id = match dialogue_utils::state(&dialogue).await {
         State::ReceiveEmail(_, message_id) => message_id,
         _ => None,
     }
@@ -36,9 +36,9 @@ pub async fn receive_email_callback(
         )
         .await?;
     }
-    let state = dialogue_state(&dialogue).await;
+    let state = dialogue_utils::state(&dialogue).await;
     if state.is_in_dialogue() {
-        update_dialogue(State::ReceiveStatus(true), bot, dialogue, &pool)
+        update(State::ReceiveStatus(true), bot, dialogue, &pool)
             .await
             .unwrap();
     } else {

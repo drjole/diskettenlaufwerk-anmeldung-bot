@@ -1,4 +1,4 @@
-use crate::models::{gender::Gender, signup::SignupRequest, status::Status};
+use crate::models::{gender::Gender, signup, status::Status};
 use strum::{EnumProperty, IntoEnumIterator};
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, KeyboardMarkup};
 
@@ -37,7 +37,7 @@ pub fn status_keyboard() -> KeyboardMarkup {
 pub fn signup_keyboard() -> KeyboardMarkup {
     let mut keyboard: Vec<Vec<KeyboardButton>> = vec![];
 
-    for signup_request in SignupRequest::iter() {
+    for signup_request in signup::Request::iter() {
         let row = vec![KeyboardButton::new(
             signup_request
                 .get_str("pretty")

@@ -1,7 +1,7 @@
 use crate::models::{
     course::Course,
     gender::Gender,
-    signup::{Signup, SignupStatus},
+    signup::{self, Signup},
     status::Status,
 };
 use color_eyre::Result;
@@ -127,7 +127,7 @@ impl Participant {
         &self,
         pool: &Pool<Postgres>,
         course_id: i64,
-        status: SignupStatus,
+        status: signup::Status,
     ) -> Result<()> {
         sqlx::query!(
             r#"
@@ -139,7 +139,7 @@ impl Participant {
             "#,
             self.id,
             course_id,
-            status as SignupStatus,
+            status as signup::Status,
         )
         .execute(pool)
         .await?;
@@ -230,16 +230,20 @@ Ort: {} (/edit_city)
 Telefonnummer: {} (/edit_phone)
 E-Mail-Adresse: {} (/edit_email)
 Status: {} (/edit_status)"#,
-            self.given_name.clone().unwrap_or("<i>leer</i>".into()),
-            self.last_name.clone().unwrap_or("<i>leer</i>".into()),
+            self.given_name
+                .clone()
+                .unwrap_or_else(|| "<i>leer</i>".into()),
+            self.last_name
+                .clone()
+                .unwrap_or_else(|| "<i>leer</i>".into()),
             self.gender.clone().map_or("<i>leer</i>".into(), |g| g
                 .get_str("pretty")
                 .unwrap_or_else(|| panic!("Better set that enum prop"))
                 .to_string()),
-            self.street.clone().unwrap_or("<i>leer</i>".into()),
-            self.city.clone().unwrap_or("<i>leer</i>".into()),
-            self.phone.clone().unwrap_or("<i>leer</i>".into()),
-            self.email.clone().unwrap_or("<i>leer</i>".into()),
+            self.street.clone().unwrap_or_else(|| "<i>leer</i>".into()),
+            self.city.clone().unwrap_or_else(|| "<i>leer</i>".into()),
+            self.phone.clone().unwrap_or_else(|| "<i>leer</i>".into()),
+            self.email.clone().unwrap_or_else(|| "<i>leer</i>".into()),
             self.status.clone().map_or("<i>leer</i>".into(), |s| s
                 .get_str("pretty")
                 .unwrap_or_else(|| panic!("Better set that enum prop"))
@@ -249,11 +253,11 @@ Status: {} (/edit_status)"#,
             s.push_str(&format!(
                 "\n{}: {} (/edit_status_related_info)",
                 self.status_related_info_name()
-                    .unwrap_or("<i>leer</i>".into()),
+                    .unwrap_or_else(|| "<i>leer</i>".into()),
                 self.status_related_info
                     .clone()
-                    .unwrap_or("<i>leer</i>".into())
-            ))
+                    .unwrap_or_else(|| "<i>leer</i>".into())
+            ));
         }
         write!(f, "{s}")
     }

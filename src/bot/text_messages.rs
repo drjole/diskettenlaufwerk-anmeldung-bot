@@ -12,7 +12,7 @@ pub enum TextMessage {
 impl Display for TextMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TextMessage::Start => write!(
+            Self::Start => write!(
                 f,
                 r#"Hey!
 
@@ -25,14 +25,14 @@ Fahre dafür zunächst mit der Eingabe deiner Daten fort und nutze dann die in /
 
 Warnung: Ich überprüfe deine Daten in keinster Weise auf Echtheit oder Korrektheit, sondern schicke diese so, wie du sie eingibts, an den UniSport weiter."#
             ),
-            TextMessage::Cancel => write!(f, "Aktion abgebrochen."),
-            TextMessage::ShowData(participant) => write!(
+            Self::Cancel => write!(f, "Aktion abgebrochen."),
+            Self::ShowData(participant) => write!(
                 f,
                 r#"Ich habe folgende Informationen über dich gespeichert. Nutze die angezeigten Befehle, um deine Daten zu ändern.
 
 {participant}"#
             ),
-            TextMessage::EnterDataComplete => write!(
+            Self::EnterDataComplete => write!(
                 f,
                 r#"Super {}
 
@@ -43,7 +43,7 @@ Wenn du deine Daten ändern willst, nutze die /edit... Befehle. Diese findest du
 Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antworten und dich anmelden lassen."#,
                 emojis::get_by_shortcode("tada").unwrap()
             ),
-            TextMessage::SignupResponse(course) => write!(
+            Self::SignupResponse(course) => write!(
                 f,
                 r#"Heute ist Frisbee-Zeit! {}
 

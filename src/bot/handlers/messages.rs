@@ -1,16 +1,11 @@
 use crate::{
     bot::{
-        dialogue::{dialogue_state, update_dialogue},
+        dialogue_utils,
         keyboards::{gender_keyboard, no_answer_keyboard, status_keyboard},
         schema::{MyDialogue, State},
         text_messages::TextMessage,
     },
-    models::{
-        gender::Gender,
-        participant::Participant,
-        signup::{signup, SignupRequest, SignupStatus},
-        status::Status,
-    },
+    models::{gender::Gender, participant::Participant, signup, status::Status},
 };
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
@@ -29,9 +24,9 @@ pub async fn receive_given_name(
         Some(text) => {
             participant.given_name = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await;
             if state.is_in_dialogue() {
-                update_dialogue(State::ReceiveLastName(true), bot, dialogue, &pool).await?;
+                dialogue_utils::update(State::ReceiveLastName(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Vorname geändert.").await?;
                 dialogue.reset().await.unwrap();
@@ -60,9 +55,9 @@ pub async fn receive_last_name(
         Some(text) => {
             participant.last_name = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await;
             if state.is_in_dialogue() {
-                update_dialogue(State::ReceiveGender(true), bot, dialogue, &pool).await?;
+                dialogue_utils::update(State::ReceiveGender(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Nachname geändert.").await?;
                 dialogue.reset().await.unwrap();
@@ -96,9 +91,9 @@ pub async fn receive_gender(
     }) {
         participant.gender = Some(gender);
         participant.update(&pool).await?;
-        let state = dialogue_state(&dialogue).await;
+        let state = dialogue_utils::state(&dialogue).await;
         if state.is_in_dialogue() {
-            update_dialogue(State::ReceiveStreet(true), bot, dialogue, &pool).await?;
+            dialogue_utils::update(State::ReceiveStreet(true), bot, dialogue, &pool).await?;
         } else {
             bot.send_message(dialogue.chat_id(), "Geschlecht geändert.")
                 .reply_markup(KeyboardRemove::default())
@@ -129,9 +124,9 @@ pub async fn receive_street(
         Some(text) => {
             participant.street = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await;
             if state.is_in_dialogue() {
-                update_dialogue(State::ReceiveCity(true), bot, dialogue, &pool).await?;
+                dialogue_utils::update(State::ReceiveCity(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Straße und Hausnummer geändert.")
                     .await?;
@@ -158,9 +153,9 @@ pub async fn receive_city(
         Some(text) => {
             participant.city = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await;
             if state.is_in_dialogue() {
-                update_dialogue(State::ReceivePhone(true), bot, dialogue, &pool).await?;
+                dialogue_utils::update(State::ReceivePhone(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Postleitzahl und Ort geändert.")
                     .await?;
@@ -187,9 +182,10 @@ pub async fn receive_phone(
         Some(text) => {
             participant.phone = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await;
             if state.is_in_dialogue() {
-                update_dialogue(State::ReceiveEmail(true, None), bot, dialogue, &pool).await?;
+                dialogue_utils::update(State::ReceiveEmail(true, None), bot, dialogue, &pool)
+                    .await?;
             } else {
                 bot.send_message(msg.chat.id, "Telefonnummer geändert.")
                     .await?;
@@ -219,7 +215,7 @@ pub async fn receive_email(
         Some(text) => {
             participant.email = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await;
             let message_id = match state {
                 State::ReceiveEmail(_, message_id) => message_id,
                 _ => None,
@@ -228,7 +224,7 @@ pub async fn receive_email(
             bot.edit_message_reply_markup(dialogue.chat_id(), message_id)
                 .await?;
             if state.is_in_dialogue() {
-                update_dialogue(State::ReceiveStatus(true), bot, dialogue, &pool).await?;
+                dialogue_utils::update(State::ReceiveStatus(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "E-Mail-Adresse geändert.")
                     .await?;
@@ -264,14 +260,16 @@ pub async fn receive_status(
     }) {
         participant.status = Some(status.clone());
         participant.update(&pool).await?;
-        let state = dialogue_state(&dialogue).await;
+        let state = dialogue_utils::state(&dialogue).await;
         if state.is_in_dialogue() {
-            update_dialogue(State::ReceiveStatusRelatedInfo(true), bot, dialogue, &pool).await?;
+            dialogue_utils::update(State::ReceiveStatusRelatedInfo(true), bot, dialogue, &pool)
+                .await?;
         } else {
             bot.send_message(dialogue.chat_id(), "Status geändert.")
                 .reply_markup(KeyboardRemove::default())
                 .await?;
-            update_dialogue(State::ReceiveStatusRelatedInfo(false), bot, dialogue, &pool).await?;
+            dialogue_utils::update(State::ReceiveStatusRelatedInfo(false), bot, dialogue, &pool)
+                .await?;
         }
     } else {
         let keyboard = status_keyboard();
@@ -294,7 +292,7 @@ pub async fn receive_status_related_info(
     log::info!("receive_status_related_info by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     let status_related_info_name = participant.status_related_info_name().unwrap_or_default();
-    let state = dialogue_state(&dialogue).await;
+    let state = dialogue_utils::state(&dialogue).await;
     match msg.text() {
         Some(text) => {
             participant.status_related_info = Some(text.to_string());
@@ -333,26 +331,26 @@ pub async fn receive_signup_response(
     log::info!("receive_signup_response by chat {}", msg.chat.id);
     let participant = Participant::find_by_id(&pool, dialogue.chat_id().0).await?;
     if let Some(Some(signup_request)) = msg.text().map(|text| {
-        SignupRequest::iter().find(|s| {
+        signup::Request::iter().find(|s| {
             s.get_str("pretty")
                 .unwrap_or_else(|| panic!("Better set that enum prop"))
                 == text
         })
     }) {
-        let course_id = match dialogue_state(&dialogue).await {
+        let course_id = match dialogue_utils::state(&dialogue).await {
             State::ReceiveSignupResponse(course_id) => Some(course_id),
             _ => None,
         }
         .unwrap();
         match signup_request {
-            SignupRequest::Accept => {
+            signup::Request::Accept => {
                 bot.send_message(msg.chat.id, "Ok, einen Moment bitte...")
                     .reply_markup(KeyboardRemove::default())
                     .await?;
-                match signup(&participant, course_id).await {
+                match signup::perform(&participant, course_id).await {
                     Ok(_) => {
                         participant
-                            .set_signup_status(&pool, course_id, SignupStatus::SignedUp)
+                            .set_signup_status(&pool, course_id, signup::Status::SignedUp)
                             .await?;
                         bot.send_message(msg.chat.id, "Das hat geklappt! Wenn du deine E-Mail-Adresse angegeben hast, findest du gleich eine Bestätigung in deinem Postfach.").await?;
                     }
@@ -365,12 +363,12 @@ pub async fn receive_signup_response(
                     }
                 };
             }
-            SignupRequest::Reject => {
+            signup::Request::Reject => {
                 bot.send_message(msg.chat.id, "Ok, dann vielleicht beim nächsten Mal! Solltest du dich umentscheiden, kannst du den /signup Befehl nutzen, um dich doch noch anzumelden.")
                     .reply_markup(KeyboardRemove::default())
                     .await?;
                 participant
-                    .set_signup_status(&pool, course_id, SignupStatus::Rejected)
+                    .set_signup_status(&pool, course_id, signup::Status::Rejected)
                     .await?;
             }
         }

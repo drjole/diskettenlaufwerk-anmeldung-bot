@@ -11,7 +11,7 @@ use tokio::time::{sleep, Duration};
 
 #[derive(Clone, Debug, Display, EnumString, sqlx::Type)]
 #[sqlx(type_name = "signup_status")]
-pub enum SignupStatus {
+pub enum Status {
     Notified,
     SignedUp,
     Rejected,
@@ -21,11 +21,11 @@ pub enum SignupStatus {
 pub struct Signup {
     pub participant_id: i64,
     pub course_id: i64,
-    pub status: SignupStatus,
+    pub status: Status,
 }
 
 #[derive(Clone, Debug, Display, EnumIter, EnumProperty)]
-pub enum SignupRequest {
+pub enum Request {
     #[strum(props(pretty = "Aber sowas von!"))]
     Accept,
     #[strum(props(pretty = "Heute leider nicht."))]
@@ -38,7 +38,7 @@ lazy_static! {
         Regex::new(r"Sie haben sich verbindlich für das Angebot Nr. \d+ angemeldet.").unwrap();
 }
 
-pub async fn signup(participant: &Participant, course_id: i64) -> Result<()> {
+pub async fn perform(participant: &Participant, course_id: i64) -> Result<()> {
     let client = reqwest::Client::new();
     let form_url = format!("https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi?Kursid={course_id}");
 
@@ -55,7 +55,7 @@ pub async fn signup(participant: &Participant, course_id: i64) -> Result<()> {
         for (key, value) in participant_params {
             params.push((key, value));
         }
-        request_body_from_params(params)?
+        request_body_from_params(params)
     };
 
     // Step 2: Submit the initial form and get the user confirmation page in response
@@ -73,7 +73,7 @@ pub async fn signup(participant: &Participant, course_id: i64) -> Result<()> {
         let mut params = params_from_form(form, true);
         // Add this parameter to "confirm" the signup
         params.push(("submit".into(), "verbindliche Buchung".into()));
-        request_body_from_params(params)?
+        request_body_from_params(params)
     };
 
     // Step 3: Finalize the signup
@@ -149,16 +149,16 @@ fn params_from_form(form: ElementRef<'_>, keep_user_params: bool) -> Vec<(String
         .collect::<Vec<(String, String)>>()
 }
 
-fn request_body_from_params(mut params: Vec<(String, String)>) -> Result<String> {
-    encode_params(&mut params)?;
-    Ok(params
+fn request_body_from_params(mut params: Vec<(String, String)>) -> String {
+    encode_params(&mut params);
+    params
         .iter()
         .map(|(name, value)| format!("{name}={value}"))
         .collect::<Vec<String>>()
-        .join("&"))
+        .join("&")
 }
 
-fn encode_params(params: &mut [(String, String)]) -> Result<()> {
+fn encode_params(params: &mut [(String, String)]) {
     for (_, value) in params.iter_mut() {
         *value = byte_serialize(
             &ISO_8859_1
@@ -167,5 +167,4 @@ fn encode_params(params: &mut [(String, String)]) -> Result<()> {
         )
         .collect();
     }
-    Ok(())
 }

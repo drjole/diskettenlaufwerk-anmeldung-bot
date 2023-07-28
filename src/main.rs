@@ -10,7 +10,7 @@ use crate::{
         schema::{MyStorage, State},
         text_messages::TextMessage,
     },
-    models::{course::Course, participant::Participant, signup::SignupStatus},
+    models::{course::Course, participant::Participant, signup},
 };
 use color_eyre::{eyre::eyre, Result};
 use sqlx::postgres::PgPoolOptions;
@@ -23,13 +23,10 @@ use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    match std::env::args().nth(1) {
-        Some(arg) => match arg.as_str() {
-            "bot" => run_bot().await,
-            "scraper" => run_scraper().await,
-            _ => Err(eyre!("invalid argument: {arg}")),
-        },
-        None => run_bot().await,
+    match std::env::args().nth(1).as_deref() {
+        Some("bot") => run_bot().await,
+        Some("scraper") => run_scraper().await,
+        _ => Err(eyre!("invalid argument")),
     }
 }
 
@@ -78,12 +75,9 @@ async fn run_scraper() -> Result<()> {
     log::info!("fetching new courses");
     Course::fetch(&pool).await?;
 
-    let course_today = match Course::today(&pool).await? {
-        Some(c) => c,
-        None => {
+    let Some(course_today) = Course::today(&pool).await?  else {
             log::info!("no course found for today");
             return Ok(());
-        }
     };
     let uninformed_participants = Participant::uninformed(&course_today, &pool).await?;
 
@@ -111,7 +105,7 @@ async fn run_scraper() -> Result<()> {
         .await?;
 
         participant
-            .set_signup_status(&pool, course_today.id, SignupStatus::Notified)
+            .set_signup_status(&pool, course_today.id, signup::Status::Notified)
             .await?;
 
         storage

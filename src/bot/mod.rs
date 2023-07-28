@@ -1,4 +1,4 @@
-pub mod dialogue;
+pub mod dialogue_utils;
 pub mod handlers;
 pub mod keyboards;
 pub mod schema;
