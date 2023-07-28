@@ -1,3 +1,4 @@
+use crate::bot::handlers;
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
 use teloxide::{
@@ -10,12 +11,10 @@ use teloxide::{
     utils::command::BotCommands,
 };
 
-use crate::bot::handlers;
-
 pub type MyDialogue = Dialogue<State, ErasedStorage<State>>;
 pub type MyStorage = std::sync::Arc<ErasedStorage<State>>;
 
-#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub enum State {
     #[default]
     Default,
@@ -51,7 +50,7 @@ impl State {
     }
 }
 
-#[derive(BotCommands, Clone)]
+#[derive(BotCommands, Clone, Debug)]
 #[command(
     description = "Diese Befehle sind verfügbar:",
     rename_rule = "snake_case"

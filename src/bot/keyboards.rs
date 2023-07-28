@@ -2,7 +2,7 @@ use crate::models::{gender::Gender, signup, status::Status};
 use strum::{EnumProperty, IntoEnumIterator};
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, KeyboardMarkup};
 
-pub fn gender_keyboard() -> KeyboardMarkup {
+pub fn gender() -> KeyboardMarkup {
     let mut keyboard: Vec<Vec<KeyboardButton>> = vec![];
 
     for gender in Gender::iter() {
@@ -19,7 +19,7 @@ pub fn gender_keyboard() -> KeyboardMarkup {
         .one_time_keyboard(true)
 }
 
-pub fn status_keyboard() -> KeyboardMarkup {
+pub fn status() -> KeyboardMarkup {
     let mut keyboard: Vec<Vec<KeyboardButton>> = vec![];
 
     for status in Status::iter() {
@@ -34,7 +34,7 @@ pub fn status_keyboard() -> KeyboardMarkup {
     KeyboardMarkup::new(keyboard).one_time_keyboard(true)
 }
 
-pub fn signup_keyboard() -> KeyboardMarkup {
+pub fn signup() -> KeyboardMarkup {
     let mut keyboard: Vec<Vec<KeyboardButton>> = vec![];
 
     for signup_request in signup::Request::iter() {
@@ -51,7 +51,7 @@ pub fn signup_keyboard() -> KeyboardMarkup {
         .one_time_keyboard(true)
 }
 
-pub fn no_answer_keyboard() -> InlineKeyboardMarkup {
+pub fn no_answer() -> InlineKeyboardMarkup {
     let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
 
     let row = vec![InlineKeyboardButton::callback("Keine Angabe.", "no answer")];

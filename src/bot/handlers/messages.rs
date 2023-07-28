@@ -1,7 +1,6 @@
 use crate::{
     bot::{
-        dialogue_utils,
-        keyboards::{gender_keyboard, no_answer_keyboard, status_keyboard},
+        dialogue_utils, keyboards,
         schema::{MyDialogue, State},
         text_messages::TextMessage,
     },
@@ -101,7 +100,7 @@ pub async fn receive_gender(
             dialogue.reset().await.unwrap();
         }
     } else {
-        let keyboard = gender_keyboard();
+        let keyboard = keyboards::gender();
         bot.send_message(
             dialogue.chat_id(),
             "Das habe ich nicht verstanden. Bitte wähle dein Geschlecht aus.",
@@ -236,7 +235,7 @@ pub async fn receive_email(
                 msg.chat.id,
                 "Das habe ich nicht verstanden. Bitte gib deine E-Mail-Adresse ein.",
             )
-            .reply_markup(no_answer_keyboard())
+            .reply_markup(keyboards::no_answer())
             .await?;
         }
     }
@@ -270,7 +269,7 @@ pub async fn receive_status(
             dialogue_utils::update(State::ReceiveStatusInfo(false), bot, dialogue, &pool).await?;
         }
     } else {
-        let keyboard = status_keyboard();
+        let keyboard = keyboards::status();
         bot.send_message(
             dialogue.chat_id(),
             "Das habe ich nicht verstanden. Bitte wähle deinen Status aus:",

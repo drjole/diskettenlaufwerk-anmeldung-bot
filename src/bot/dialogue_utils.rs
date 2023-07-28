@@ -1,11 +1,8 @@
-use crate::bot::{
-    keyboards::{no_answer_keyboard, signup_keyboard},
-    text_messages::TextMessage,
-};
 use crate::{
     bot::{
-        keyboards::{gender_keyboard, status_keyboard},
+        keyboards,
         schema::{MyDialogue, State},
+        text_messages::TextMessage,
     },
     models::{course::Course, participant::Participant},
 };
@@ -59,19 +56,19 @@ pub async fn update(
     match new_state {
         State::ReceiveGender(_) => {
             bot.send_message(dialogue.chat_id(), message)
-                .reply_markup(gender_keyboard())
+                .reply_markup(keyboards::gender())
                 .await?;
         }
         State::ReceiveEmail(in_dialogue, _) => {
             let msg = bot
                 .send_message(dialogue.chat_id(), message)
-                .reply_markup(no_answer_keyboard())
+                .reply_markup(keyboards::no_answer())
                 .await?;
             new_state = State::ReceiveEmail(in_dialogue, Some(msg.id));
         }
         State::ReceiveStatus(_) => {
             bot.send_message(dialogue.chat_id(), message)
-                .reply_markup(status_keyboard())
+                .reply_markup(keyboards::status())
                 .await?;
         }
         State::ReceiveStatusInfo(_) => {
@@ -91,7 +88,7 @@ pub async fn update(
         }
         State::ReceiveSignupResponse(_) => {
             bot.send_message(dialogue.chat_id(), message)
-                .reply_markup(signup_keyboard())
+                .reply_markup(keyboards::signup())
                 .await?;
         }
         _ => {

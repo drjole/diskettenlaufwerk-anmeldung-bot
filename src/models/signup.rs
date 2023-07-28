@@ -6,10 +6,19 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::RequestBuilder;
 use scraper::{ElementRef, Html};
-use strum::{Display, EnumIter, EnumProperty, EnumString};
+use strum::{EnumIter, EnumProperty, EnumString};
 use tokio::time::{sleep, Duration};
 
-#[derive(Clone, Debug, Display, EnumString, sqlx::Type)]
+const SIGNUP_URL: &str = "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi";
+
+#[derive(Debug, Clone)]
+pub struct Signup {
+    pub participant_id: i64,
+    pub course_id: i64,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, EnumString, sqlx::Type)]
 #[sqlx(type_name = "signup_status")]
 pub enum Status {
     Notified,
@@ -17,14 +26,7 @@ pub enum Status {
     Rejected,
 }
 
-#[derive(Clone, Debug)]
-pub struct Signup {
-    pub participant_id: i64,
-    pub course_id: i64,
-    pub status: Status,
-}
-
-#[derive(Clone, Debug, Display, EnumIter, EnumProperty)]
+#[derive(Debug, Clone, EnumIter, EnumProperty)]
 pub enum Request {
     #[strum(props(pretty = "Aber sowas von!"))]
     Accept,
@@ -32,7 +34,6 @@ pub enum Request {
     Reject,
 }
 
-const SIGNUP_URL: &str = "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi";
 lazy_static! {
     static ref SUCCESS_RESPONSE_REGEX: Regex =
         Regex::new(r"Sie haben sich verbindlich für das Angebot Nr. \d+ angemeldet.").unwrap();
@@ -125,16 +126,16 @@ fn add_headers(request: RequestBuilder) -> RequestBuilder {
 
 fn params_from_form(form: ElementRef<'_>, keep_user_params: bool) -> Vec<(String, String)> {
     let inputs_selector = scraper::Selector::parse("input").unwrap();
-    let user_params: Vec<String> = vec![
-        "Geschlecht".to_string(),
-        "Vorname".to_string(),
-        "Name".to_string(),
-        "Strasse".to_string(),
-        "Ort".to_string(),
-        "Statusorig".to_string(),
-        "Matnr".to_string(),
-        "Mail".to_string(),
-        "Tel".to_string(),
+    let user_params: &[&str] = &[
+        "Geschlecht",
+        "Vorname",
+        "Name",
+        "Strasse",
+        "Ort",
+        "Statusorig",
+        "Matnr",
+        "Mail",
+        "Tel",
     ];
     form.select(&inputs_selector)
         .map(|element| {
@@ -145,8 +146,8 @@ fn params_from_form(form: ElementRef<'_>, keep_user_params: bool) -> Vec<(String
         })
         .filter(|(name, _)| name != "reset")
         .filter(|(name, _)| name != "back")
-        .filter(|(name, _)| keep_user_params || !user_params.contains(name))
-        .collect::<Vec<(String, String)>>()
+        .filter(|(name, _)| keep_user_params || !user_params.contains(&name.as_str()))
+        .collect()
 }
 
 fn request_body_from_params(mut params: Vec<(String, String)>) -> String {

@@ -6,7 +6,7 @@ mod models;
 
 use crate::{
     bot::{
-        keyboards::signup_keyboard,
+        keyboards,
         schema::{MyStorage, State},
         text_messages::TextMessage,
     },
@@ -23,6 +23,16 @@ use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    dotenv::dotenv().map_or_else(
+        |_| println!("did not initialize dotenv"),
+        |path| {
+            println!(
+                "initialized dotenv from: {}",
+                path.to_str().unwrap_or("unknown")
+            );
+        },
+    );
+    pretty_env_logger::init_timed();
     match std::env::args().nth(1).as_deref() {
         Some("bot") | None => run_bot().await,
         Some("scraper") => run_scraper().await,
@@ -31,16 +41,6 @@ async fn main() -> Result<()> {
 }
 
 async fn run_bot() -> Result<()> {
-    match dotenv::dotenv() {
-        Ok(path) => log::info!(
-            "initialized environment from this file: {}",
-            path.to_str()
-                .ok_or_else(|| eyre!("could not convert path to dotenv file to str"))?
-        ),
-        Err(err) => log::warn!("did not initialize dotenv: {err}"),
-    }
-    pretty_env_logger::init_timed();
-
     log::info!("connecting to database");
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -48,24 +48,13 @@ async fn run_bot() -> Result<()> {
         .await?;
     sqlx::migrate!().run(&pool).await?;
 
-    let redis_url = env::var("REDIS_URL")?;
     log::info!("starting bot");
-    bot::start(pool, redis_url).await?;
+    bot::start(pool, env::var("REDIS_URL")?).await?;
 
     Ok(())
 }
 
 async fn run_scraper() -> Result<()> {
-    match dotenv::dotenv() {
-        Ok(path) => log::info!(
-            "initialized environment from this file: {}",
-            path.to_str()
-                .ok_or_else(|| eyre!("could not convert path to dotenv file to str"))?
-        ),
-        Err(err) => log::warn!("did not initialize dotenv: {err}"),
-    }
-    pretty_env_logger::init_timed();
-
     log::info!("connecting to database");
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -74,24 +63,25 @@ async fn run_scraper() -> Result<()> {
 
     log::info!("fetching new courses");
     Course::fetch(&pool).await?;
-
-    let Some(course_today) = Course::today(&pool).await?  else {
+    let Some(course_today) = Course::today(&pool).await? else {
             log::info!("no course found for today");
             return Ok(());
     };
-    let uninformed_participants = Participant::uninformed(&course_today, &pool).await?;
 
     let bot = Bot::from_env();
-    let redis_url = env::var("REDIS_URL")?;
-    let storage: MyStorage = RedisStorage::open(redis_url, Bincode).await?.erase();
-    for participant in &uninformed_participants {
+    let storage: MyStorage = RedisStorage::open(env::var("REDIS_URL")?, Bincode)
+        .await?
+        .erase();
+
+    log::info!("informing participants");
+    for participant in &Participant::uninformed(&pool, course_today.id).await? {
+        // Only inform participants that are not currently editing their data.
         let state = storage
             .clone()
             .get_dialogue(ChatId(participant.id))
             .await
             .unwrap()
             .unwrap();
-        // Only inform participants in these states.
         if !matches!(state, State::ReceiveSignupResponse(_) | State::Default) {
             continue;
         }
@@ -101,13 +91,11 @@ async fn run_scraper() -> Result<()> {
             ChatId(participant.id),
             TextMessage::SignupResponse(course_today.clone()).to_string(),
         )
-        .reply_markup(signup_keyboard())
+        .reply_markup(keyboards::signup())
         .await?;
-
         participant
             .set_signup_status(&pool, course_today.id, signup::Status::Notified)
             .await?;
-
         storage
             .clone()
             .update_dialogue(
@@ -117,7 +105,8 @@ async fn run_scraper() -> Result<()> {
             .await
             .unwrap();
 
-        sleep(Duration::from_secs(1)).await;
+        log::info!("sleep for 200ms to respect Telegram API rate limiting");
+        sleep(Duration::from_millis(200)).await;
     }
 
     Ok(())

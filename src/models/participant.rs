@@ -1,5 +1,4 @@
 use crate::models::{
-    course::Course,
     gender::Gender,
     signup::{self, Signup},
     status::Status,
@@ -46,7 +45,8 @@ impl Participant {
     }
 
     pub async fn find_by_id(pool: &Pool<Postgres>, id: i64) -> Result<Self> {
-        let participant = sqlx::query_as!(Participant,
+        let participant = sqlx::query_as!(
+            Participant,
             r#"
             SELECT id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_info
             FROM participants
@@ -59,7 +59,7 @@ impl Participant {
         Ok(participant)
     }
 
-    pub async fn uninformed(course: &Course, pool: &Pool<Postgres>) -> Result<Vec<Self>> {
+    pub async fn uninformed(pool: &Pool<Postgres>, course_id: i64) -> Result<Vec<Self>> {
         let participants = sqlx::query_as!(
             Participant,
             r#"
@@ -71,7 +71,7 @@ impl Participant {
                 WHERE participants.id = signups.participant_id AND signups.course_id = $1
             )
             "#,
-            course.id,
+            course_id,
         ).fetch_all(pool).await?;
         Ok(participants)
     }
@@ -231,14 +231,14 @@ impl std::fmt::Display for Participant {
 
         write!(
             f,
-            r#"Vorname: {} (/edit_given_name)
+            "Vorname: {} (/edit_given_name)
 Nachname: {} (/edit_last_name)
 Geschlecht: {} (/edit_gender)
 Straße: {} (/edit_street)
 Ort: {} (/edit_city)
 Telefonnummer: {} (/edit_phone)
 E-Mail-Adresse: {} (/edit_email)
-Status: {} (/edit_status){}"#,
+Status: {} (/edit_status){}",
             self.given_name
                 .as_ref()
                 .map_or("<i>leer</i>", String::as_str),
