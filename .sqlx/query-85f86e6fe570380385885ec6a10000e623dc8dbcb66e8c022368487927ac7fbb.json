@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT participant_id, course_id, status as \"status: _\"\n            FROM signups\n            WHERE participant_id = $1 AND course_id = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "participant_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "status: _",
+        "type_info": {
+          "Custom": {
+            "name": "signup_status",
+            "kind": {
+              "Enum": [
+                "Notified",
+                "SignedUp",
+                "Rejected"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "85f86e6fe570380385885ec6a10000e623dc8dbcb66e8c022368487927ac7fbb"
+}

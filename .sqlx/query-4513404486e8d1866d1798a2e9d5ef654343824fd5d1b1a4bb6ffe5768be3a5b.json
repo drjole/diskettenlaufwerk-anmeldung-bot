@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO participants(id, given_name, last_name, gender, street, city, phone, email, status, status_info)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text",
+        {
+          "Custom": {
+            "name": "gender",
+            "kind": {
+              "Enum": [
+                "Male",
+                "Female",
+                "Diverse"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        {
+          "Custom": {
+            "name": "participant_status",
+            "kind": {
+              "Enum": [
+                "StudentUniKoeln",
+                "StudentDSHSKoeln",
+                "StudentTHKoeln",
+                "StudentMacromediaKoeln",
+                "StudentKunsthochschuleFuerMedien",
+                "StudentHochschuleFuerMedienKommunikationUndWirtschaft",
+                "StudentHochschuleFuerMusikKoeln",
+                "StudentAndereHochschulen",
+                "BeschaeftigteStaatlicherKoelnerHochschulen",
+                "BeschaeftigteUniKlinikKoeln",
+                "BeschaeftigteKoelnerStudierendenwerk",
+                "MitgliedKoelnAlumni",
+                "AzubiUniKoeln",
+                "AzubiUniKlinik",
+                "AzubiKoelnerStudierendenwerk",
+                "Gast"
+              ]
+            }
+          }
+        },
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4513404486e8d1866d1798a2e9d5ef654343824fd5d1b1a4bb6ffe5768be3a5b"
+}
