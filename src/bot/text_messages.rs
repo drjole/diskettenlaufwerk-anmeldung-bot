@@ -42,7 +42,7 @@ Damit habe ich alle Daten, die ich brauche.
 Wenn du deine Daten ändern willst, nutze die /edit... Befehle. Diese findest du auch, wenn du dir deine Daten mittels /show_data anzeigen lässt.
 
 Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antworten und dich anmelden lassen.",
-                emojis::get_by_shortcode("tada").unwrap()
+                emojis::get_by_shortcode("tada").ok_or(std::fmt::Error)?
             ),
             Self::SignupResponse(course) => write!(
                 f,
@@ -51,7 +51,7 @@ Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antwort
 {course}
 
 Soll ich dich anmelden?",
-                emojis::get_by_shortcode("flying_disc").unwrap()
+                emojis::get_by_shortcode("flying_disc").ok_or(std::fmt::Error)?
             ),
         }
     }

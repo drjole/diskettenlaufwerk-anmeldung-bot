@@ -6,7 +6,7 @@ use crate::{
     },
     models::{course::Course, participant::Participant, signup::Status},
 };
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use teloxide::{prelude::*, types::KeyboardRemove, utils::command::BotCommands};
 
@@ -15,7 +15,7 @@ pub async fn help(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
     bot.send_message(msg.chat.id, Command::descriptions().to_string())
         .reply_markup(KeyboardRemove::default())
         .await?;
-    dialogue.reset().await.unwrap();
+    dialogue.reset().await.map_err(|e| eyre!(e))?;
     Ok(())
 }
 
@@ -24,7 +24,7 @@ pub async fn start(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> {
     bot.send_message(msg.chat.id, TextMessage::Start.to_string())
         .reply_markup(KeyboardRemove::default())
         .await?;
-    dialogue.reset().await.unwrap();
+    dialogue.reset().await.map_err(|e| eyre!(e))?;
     Ok(())
 }
 
@@ -33,7 +33,7 @@ pub async fn cancel(bot: Bot, dialogue: MyDialogue, msg: Message) -> Result<()> 
     bot.send_message(msg.chat.id, TextMessage::Cancel.to_string())
         .reply_markup(KeyboardRemove::default())
         .await?;
-    dialogue.reset().await.unwrap();
+    dialogue.reset().await.map_err(|e| eyre!(e))?;
     Ok(())
 }
 
@@ -67,7 +67,7 @@ pub async fn show_data(
         .parse_mode(teloxide::types::ParseMode::Html)
         .reply_markup(KeyboardRemove::default())
         .await?;
-    dialogue.reset().await.unwrap();
+    dialogue.reset().await.map_err(|e| eyre!(e))?;
     Ok(())
 }
 
@@ -92,8 +92,7 @@ pub async fn signup(
                         dialogue,
                         &pool,
                     )
-                    .await
-                    .unwrap();
+                    .await?;
                 }
             }
         } else {
@@ -103,8 +102,7 @@ pub async fn signup(
                 dialogue,
                 &pool,
             )
-            .await
-            .unwrap();
+            .await?;
             participant
                 .set_signup_status(&pool, course.id, Status::Notified)
                 .await?;
@@ -116,7 +114,7 @@ pub async fn signup(
         )
         .reply_markup(KeyboardRemove::default())
         .await?;
-        dialogue.reset().await.unwrap();
+        dialogue.reset().await.map_err(|e| eyre!(e))?;
     };
 
     Ok(())
@@ -124,9 +122,7 @@ pub async fn signup(
 
 pub async fn delete(bot: Bot, dialogue: MyDialogue, pool: Pool<Postgres>) -> Result<()> {
     log::info!("delete by chat {}", dialogue.chat_id());
-    dialogue_utils::update(State::ReceiveDeleteConfirmation, bot, dialogue, &pool)
-        .await
-        .unwrap();
+    dialogue_utils::update(State::ReceiveDeleteConfirmation, bot, dialogue, &pool).await?;
     Ok(())
 }
 

@@ -1,11 +1,11 @@
 use crate::{
     bot::{
-        dialogue_utils::{self, update},
+        dialogue_utils,
         schema::{MyDialogue, State},
     },
     models::participant::Participant,
 };
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use teloxide::prelude::*;
 
@@ -16,11 +16,13 @@ pub async fn receive_email_callback(
     pool: Pool<Postgres>,
 ) -> Result<()> {
     bot.answer_callback_query(q.id).await?;
-    let message_id = match dialogue_utils::state(&dialogue).await {
+
+    let message_id = match dialogue_utils::state(&dialogue).await? {
         State::ReceiveEmail(_, message_id) => message_id,
         _ => None,
     }
-    .unwrap();
+    .ok_or_else(|| eyre!("not in state ReceiveEmail"))?;
+
     bot.edit_message_reply_markup(dialogue.chat_id(), message_id)
         .await?;
     let mut participant = Participant::find_by_id(&pool, dialogue.chat_id().0).await?;
@@ -36,13 +38,11 @@ pub async fn receive_email_callback(
         )
         .await?;
     }
-    let state = dialogue_utils::state(&dialogue).await;
+    let state = dialogue_utils::state(&dialogue).await?;
     if state.is_in_dialogue() {
-        update(State::ReceiveStatus(true), bot, dialogue, &pool)
-            .await
-            .unwrap();
+        dialogue_utils::update(State::ReceiveStatus(true), bot, dialogue, &pool).await?;
     } else {
-        dialogue.reset().await.unwrap();
+        dialogue.reset().await.map_err(|e| eyre!(e))?;
     }
     Ok(())
 }

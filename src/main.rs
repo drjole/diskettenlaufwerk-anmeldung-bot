@@ -76,14 +76,17 @@ async fn run_scraper() -> Result<()> {
     log::info!("informing participants");
     for participant in &Participant::uninformed(&pool, course_today.id).await? {
         // Only inform participants that are not currently editing their data.
-        let state = storage
+        let dialogue = storage
             .clone()
             .get_dialogue(ChatId(participant.id))
             .await
-            .unwrap()
-            .unwrap();
-        if !matches!(state, State::ReceiveSignupResponse(_) | State::Default) {
-            continue;
+            .map_err(|e| eyre!(e))?;
+        if let Some(state) = dialogue {
+            if !matches!(state, State::ReceiveSignupResponse(_) | State::Default) {
+                continue;
+            }
+        } else {
+            log::warn!("no dialogue found for participant {}", participant.id);
         }
 
         log::info!("informing participant {}", participant.id);
@@ -103,7 +106,7 @@ async fn run_scraper() -> Result<()> {
                 State::ReceiveSignupResponse(course_today.id),
             )
             .await
-            .unwrap();
+            .map_err(|e| eyre!(e))?;
 
         log::info!("sleep for 200ms to respect Telegram API rate limiting");
         sleep(Duration::from_millis(200)).await;

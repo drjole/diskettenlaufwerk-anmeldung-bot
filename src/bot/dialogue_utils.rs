@@ -6,12 +6,16 @@ use crate::{
     },
     models::{course::Course, participant::Participant},
 };
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use teloxide::{prelude::*, types::KeyboardRemove};
 
-pub async fn state(dialogue: &MyDialogue) -> State {
-    dialogue.get().await.unwrap().unwrap()
+pub async fn state(dialogue: &MyDialogue) -> Result<State> {
+    dialogue
+        .get()
+        .await
+        .map_err(|e| eyre!(e))?
+        .ok_or_else(|| eyre!("no state found"))
 }
 
 pub async fn update(
@@ -24,7 +28,9 @@ pub async fn update(
     let message: String = match new_state {
         State::Default => String::new(),
         State::ReceiveSignupResponse(course_id) => {
-            let course = Course::find_by_id(pool, course_id).await?.unwrap();
+            let course = Course::find_by_id(pool, course_id)
+                .await?
+                .ok_or_else(|| eyre!("course with id {} not found", course_id))?;
             TextMessage::SignupResponse(course).to_string()
         }
         State::ReceiveGivenName(_) => "Bitte gib deinen Vornamen ein.".into(),
@@ -98,7 +104,7 @@ pub async fn update(
         }
     };
 
-    dialogue.update(new_state).await.unwrap();
+    dialogue.update(new_state).await.map_err(|e| eyre!(e))?;
 
     Ok(())
 }

@@ -97,11 +97,14 @@ impl Course {
         let response = request_document(request).await?;
         let document = scraper::Html::parse_document(response.as_str());
 
-        let table_header_cells_selector =
-            scraper::Selector::parse("thead > tr:first-of-type > th").unwrap();
-        let table_body_rows_selector = scraper::Selector::parse("tbody > tr").unwrap();
-        let table_cells_selector = scraper::Selector::parse("td").unwrap();
-        let a_tag_selector = scraper::Selector::parse("a").unwrap();
+        let table_header_cells_selector = scraper::Selector::parse("thead > tr:first-of-type > th")
+            .map_err(|e| eyre!("scraper error: {e}"))?;
+        let table_body_rows_selector =
+            scraper::Selector::parse("tbody > tr").map_err(|e| eyre!("scraper error: {e}"))?;
+        let table_cells_selector =
+            scraper::Selector::parse("td").map_err(|e| eyre!("scraper error: {e}"))?;
+        let a_tag_selector =
+            scraper::Selector::parse("a").map_err(|e| eyre!("scraper error: {e}"))?;
 
         let table_headers: HashMap<String, usize> = document
             .select(&table_header_cells_selector)

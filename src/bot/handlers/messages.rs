@@ -6,7 +6,7 @@ use crate::{
     },
     models::{gender::Gender, participant::Participant, signup, status::Status},
 };
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
 use strum::{EnumProperty, IntoEnumIterator};
 use teloxide::{prelude::*, types::KeyboardRemove};
@@ -23,12 +23,12 @@ pub async fn receive_given_name(
         Some(text) => {
             participant.given_name = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_utils::state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await?;
             if state.is_in_dialogue() {
                 dialogue_utils::update(State::ReceiveLastName(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Vorname geändert.").await?;
-                dialogue.reset().await.unwrap();
+                dialogue.reset().await.map_err(|e| eyre!(e))?;
             }
         }
         None => {
@@ -54,12 +54,12 @@ pub async fn receive_last_name(
         Some(text) => {
             participant.last_name = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_utils::state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await?;
             if state.is_in_dialogue() {
                 dialogue_utils::update(State::ReceiveGender(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Nachname geändert.").await?;
-                dialogue.reset().await.unwrap();
+                dialogue.reset().await.map_err(|e| eyre!(e))?;
             }
         }
         None => {
@@ -90,14 +90,14 @@ pub async fn receive_gender(
     }) {
         participant.gender = Some(gender);
         participant.update(&pool).await?;
-        let state = dialogue_utils::state(&dialogue).await;
+        let state = dialogue_utils::state(&dialogue).await?;
         if state.is_in_dialogue() {
             dialogue_utils::update(State::ReceiveStreet(true), bot, dialogue, &pool).await?;
         } else {
             bot.send_message(dialogue.chat_id(), "Geschlecht geändert.")
                 .reply_markup(KeyboardRemove::default())
                 .await?;
-            dialogue.reset().await.unwrap();
+            dialogue.reset().await.map_err(|e| eyre!(e))?;
         }
     } else {
         let keyboard = keyboards::gender();
@@ -123,13 +123,13 @@ pub async fn receive_street(
         Some(text) => {
             participant.street = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_utils::state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await?;
             if state.is_in_dialogue() {
                 dialogue_utils::update(State::ReceiveCity(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Straße und Hausnummer geändert.")
                     .await?;
-                dialogue.reset().await.unwrap();
+                dialogue.reset().await.map_err(|e| eyre!(e))?;
             }
         }
         None => {
@@ -152,13 +152,13 @@ pub async fn receive_city(
         Some(text) => {
             participant.city = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_utils::state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await?;
             if state.is_in_dialogue() {
                 dialogue_utils::update(State::ReceivePhone(true), bot, dialogue, &pool).await?;
             } else {
                 bot.send_message(msg.chat.id, "Postleitzahl und Ort geändert.")
                     .await?;
-                dialogue.reset().await.unwrap();
+                dialogue.reset().await.map_err(|e| eyre!(e))?;
             }
         }
         None => {
@@ -181,14 +181,14 @@ pub async fn receive_phone(
         Some(text) => {
             participant.phone = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_utils::state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await?;
             if state.is_in_dialogue() {
                 dialogue_utils::update(State::ReceiveEmail(true, None), bot, dialogue, &pool)
                     .await?;
             } else {
                 bot.send_message(msg.chat.id, "Telefonnummer geändert.")
                     .await?;
-                dialogue.reset().await.unwrap();
+                dialogue.reset().await.map_err(|e| eyre!(e))?;
             }
         }
         None => {
@@ -214,12 +214,12 @@ pub async fn receive_email(
         Some(text) => {
             participant.email = Some(text.to_string());
             participant.update(&pool).await?;
-            let state = dialogue_utils::state(&dialogue).await;
+            let state = dialogue_utils::state(&dialogue).await?;
             let message_id = match state {
                 State::ReceiveEmail(_, message_id) => message_id,
                 _ => None,
             }
-            .unwrap();
+            .ok_or_else(|| eyre!("not in state ReceiveEmail"))?;
             bot.edit_message_reply_markup(dialogue.chat_id(), message_id)
                 .await?;
             if state.is_in_dialogue() {
@@ -227,7 +227,7 @@ pub async fn receive_email(
             } else {
                 bot.send_message(msg.chat.id, "E-Mail-Adresse geändert.")
                     .await?;
-                dialogue.reset().await.unwrap();
+                dialogue.reset().await.map_err(|e| eyre!(e))?;
             }
         }
         None => {
@@ -259,7 +259,7 @@ pub async fn receive_status(
     }) {
         participant.status = Some(status.clone());
         participant.update(&pool).await?;
-        let state = dialogue_utils::state(&dialogue).await;
+        let state = dialogue_utils::state(&dialogue).await?;
         if state.is_in_dialogue() {
             dialogue_utils::update(State::ReceiveStatusInfo(true), bot, dialogue, &pool).await?;
         } else {
@@ -289,7 +289,7 @@ pub async fn receive_status_info(
     log::info!("receive_status_info by chat {}", msg.chat.id);
     let mut participant = Participant::find_by_id(&pool, msg.chat.id.0).await?;
     let status_info_name = participant.status_info_name().unwrap_or_default();
-    let state = dialogue_utils::state(&dialogue).await;
+    let state = dialogue_utils::state(&dialogue).await?;
     match msg.text() {
         Some(text) => {
             participant.status_info = Some(text.to_string());
@@ -301,7 +301,7 @@ pub async fn receive_status_info(
                 bot.send_message(msg.chat.id, format!("{status_info_name} geändert.",))
                     .await?;
             }
-            dialogue.reset().await.unwrap();
+            dialogue.reset().await.map_err(|e| eyre!(e))?;
         }
         None => {
             bot.send_message(
@@ -329,11 +329,11 @@ pub async fn receive_signup_response(
                 == text
         })
     }) {
-        let course_id = match dialogue_utils::state(&dialogue).await {
+        let course_id = match dialogue_utils::state(&dialogue).await? {
             State::ReceiveSignupResponse(course_id) => Some(course_id),
             _ => None,
         }
-        .unwrap();
+        .ok_or_else(|| eyre!("not in state ReceiveSignupResponse"))?;
         match signup_request {
             signup::Request::Accept => {
                 bot.send_message(msg.chat.id, "Ok, einen Moment bitte...")
@@ -364,7 +364,7 @@ pub async fn receive_signup_response(
                     .await?;
             }
         }
-        dialogue.reset().await.unwrap();
+        dialogue.reset().await.map_err(|e| eyre!(e))?;
     } else {
         bot.send_message(
             dialogue.chat_id(),
@@ -387,7 +387,7 @@ pub async fn receive_delete_confirmation(
                 let mut participant = Participant::find_by_id(&pool, dialogue.chat_id().0).await?;
                 participant.delete(&pool).await?;
                 bot.send_message(dialogue.chat_id(), "Daten gelöscht.\n\nWenn du dich wieder anmelden möchtest, nutze den /enter_data Befehl.").await?;
-                dialogue.reset().await.unwrap();
+                dialogue.reset().await.map_err(|e| eyre!(e))?;
             } else {
                 bot.send_message(
                     dialogue.chat_id(),
@@ -395,7 +395,7 @@ pub async fn receive_delete_confirmation(
                 )
                 .parse_mode(teloxide::types::ParseMode::Html)
                 .await?;
-                dialogue.reset().await.unwrap();
+                dialogue.reset().await.map_err(|e| eyre!(e))?;
             }
         }
         None => {

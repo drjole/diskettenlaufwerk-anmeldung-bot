@@ -34,9 +34,14 @@ pub enum Request {
     Reject,
 }
 
+fn get_success_response_regex() -> Regex {
+    #[allow(clippy::expect_used)]
+    Regex::new(r"Sie haben sich verbindlich für das Angebot Nr. \d+ angemeldet.")
+        .expect("invalid regex")
+}
+
 lazy_static! {
-    static ref SUCCESS_RESPONSE_REGEX: Regex =
-        Regex::new(r"Sie haben sich verbindlich für das Angebot Nr. \d+ angemeldet.").unwrap();
+    static ref SUCCESS_RESPONSE_REGEX: Regex = get_success_response_regex();
 }
 
 pub async fn perform(participant: &Participant, course_id: i64) -> Result<()> {
@@ -50,13 +55,13 @@ pub async fn perform(participant: &Participant, course_id: i64) -> Result<()> {
     // We need a scope here... https://github.com/causal-agent/scraper/issues/75#issuecomment-1076997293
     let body = {
         let document = scraper::Html::parse_document(response.as_str());
-        let form = parse_form(&document);
-        let mut params = params_from_form(form, false);
+        let form = parse_form(&document)?;
+        let mut params = params_from_form(form, false)?;
         let participant_params = participant.as_payload();
         for (key, value) in participant_params {
             params.push((key, value));
         }
-        request_body_from_params(params)
+        request_body_from_params(params)?
     };
 
     // Step 2: Submit the initial form and get the user confirmation page in response
@@ -70,11 +75,11 @@ pub async fn perform(participant: &Participant, course_id: i64) -> Result<()> {
     // We need a scope here... https://github.com/causal-agent/scraper/issues/75#issuecomment-1076997293
     let body = {
         let document = scraper::Html::parse_document(response.as_str());
-        let form = parse_form(&document);
-        let mut params = params_from_form(form, true);
+        let form = parse_form(&document)?;
+        let mut params = params_from_form(form, true)?;
         // Add this parameter to "confirm" the signup
         params.push(("submit".into(), "verbindliche Buchung".into()));
-        request_body_from_params(params)
+        request_body_from_params(params)?
     };
 
     // Step 3: Finalize the signup
@@ -111,10 +116,14 @@ pub async fn perform(participant: &Participant, course_id: i64) -> Result<()> {
     }
 }
 
-fn parse_form(document: &Html) -> ElementRef {
-    let form_selector = scraper::Selector::parse("form").unwrap();
-    let form_element = document.select(&form_selector).next().unwrap();
-    form_element
+fn parse_form(document: &Html) -> Result<ElementRef> {
+    let form_selector =
+        scraper::Selector::parse("form").map_err(|e| eyre!("scraper error: {e}"))?;
+    let form_element = document
+        .select(&form_selector)
+        .next()
+        .ok_or_else(|| eyre!("no form found"))?;
+    Ok(form_element)
 }
 
 fn add_headers(request: RequestBuilder) -> RequestBuilder {
@@ -124,8 +133,9 @@ fn add_headers(request: RequestBuilder) -> RequestBuilder {
         .header("Origin", "https://isis.verw.uni-koeln.de")
 }
 
-fn params_from_form(form: ElementRef<'_>, keep_user_params: bool) -> Vec<(String, String)> {
-    let inputs_selector = scraper::Selector::parse("input").unwrap();
+fn params_from_form(form: ElementRef<'_>, keep_user_params: bool) -> Result<Vec<(String, String)>> {
+    let inputs_selector =
+        scraper::Selector::parse("input").map_err(|e| eyre!("scraper error: {e}"))?;
     let user_params: &[&str] = &[
         "Geschlecht",
         "Vorname",
@@ -137,35 +147,37 @@ fn params_from_form(form: ElementRef<'_>, keep_user_params: bool) -> Vec<(String
         "Mail",
         "Tel",
     ];
-    form.select(&inputs_selector)
-        .map(|element| {
-            (
-                element.value().attr("name").unwrap().to_string(),
-                element.value().attr("value").unwrap().to_string(),
-            )
+    let params = form
+        .select(&inputs_selector)
+        .filter_map(|element| {
+            let name = element.value().attr("name")?.to_owned();
+            let value = element.value().attr("value")?.to_owned();
+            Some((name, value))
         })
-        .filter(|(name, _)| name != "reset")
-        .filter(|(name, _)| name != "back")
+        .filter(|(name, _)| *name != "reset")
+        .filter(|(name, _)| *name != "back")
         .filter(|(name, _)| keep_user_params || !user_params.contains(&name.as_str()))
-        .collect()
+        .collect::<Vec<_>>();
+    Ok(params)
 }
 
-fn request_body_from_params(mut params: Vec<(String, String)>) -> String {
-    encode_params(&mut params);
-    params
+fn request_body_from_params(mut params: Vec<(String, String)>) -> Result<String> {
+    encode_params(&mut params)?;
+    Ok(params
         .iter()
         .map(|(name, value)| format!("{name}={value}"))
         .collect::<Vec<String>>()
-        .join("&")
+        .join("&"))
 }
 
-fn encode_params(params: &mut [(String, String)]) {
+fn encode_params(params: &mut [(String, String)]) -> Result<()> {
     for (_, value) in params.iter_mut() {
         *value = byte_serialize(
             &ISO_8859_1
                 .encode(value, encoding::EncoderTrap::Strict)
-                .unwrap(),
+                .map_err(|e| eyre!(e))?,
         )
         .collect();
     }
+    Ok(())
 }
