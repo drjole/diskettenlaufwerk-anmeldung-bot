@@ -1,4 +1,4 @@
-use crate::{http::request_document, models::participant::Participant};
+use crate::{models::participant::Participant, utils::http::request_document};
 use color_eyre::{eyre::eyre, Result};
 use encoding::{all::ISO_8859_1, Encoding};
 use form_urlencoded::byte_serialize;

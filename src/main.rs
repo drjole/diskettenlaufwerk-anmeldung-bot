@@ -1,8 +1,8 @@
 extern crate pretty_env_logger;
 
 mod bot;
-pub mod http;
 mod models;
+mod utils;
 
 use crate::{
     bot::{
