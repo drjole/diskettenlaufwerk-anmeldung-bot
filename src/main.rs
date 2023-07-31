@@ -87,6 +87,7 @@ async fn run_scraper() -> Result<()> {
             }
         } else {
             log::warn!("no dialogue found for participant {}", participant.id);
+            continue;
         }
 
         log::info!("informing participant {}", participant.id);
