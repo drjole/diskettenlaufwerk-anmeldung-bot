@@ -323,11 +323,20 @@ pub async fn receive_signup_response(
     log::info!("receive_signup_response by chat {}", msg.chat.id);
     let participant = Participant::find_by_id(&pool, dialogue.chat_id().0).await?;
     if let Some(Some(signup_request)) = msg.text().map(|text| {
-        signup::Request::iter().find(|s| {
-            s.get_str("pretty")
-                .unwrap_or_else(|| panic!("Better set that enum prop"))
-                == text
-        })
+        signup::Request::iter()
+            .find(|s| {
+                s.get_str("pretty")
+                    .unwrap_or_else(|| panic!("Better set that enum prop"))
+                    == text
+            })
+            .or_else(|| {
+                let clean = text.trim().to_lowercase();
+                if clean.contains("ja") || clean.contains("yes") || clean.contains("schwanz") {
+                    Some(signup::Request::Accept)
+                } else {
+                    Some(signup::Request::Reject)
+                }
+            })
     }) {
         let course_id = match dialogue_utils::state(&dialogue).await? {
             State::ReceiveSignupResponse(course_id) => Some(course_id),
@@ -349,7 +358,7 @@ pub async fn receive_signup_response(
                     Err(err) => {
                         bot.send_message(
                             msg.chat.id,
-                            format!("Fehler bei der Anmeldung:\n\n{err}"),
+                            format!("Fehler bei der Anmeldung:\n\n{err}\n\nWenn du das Problem selber beheben kannst, versuche es später noch einmal mit /signup. Melde dich ansonsten bei den Entwicklern."),
                         )
                         .await?;
                     }

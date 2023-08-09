@@ -116,7 +116,7 @@ pub async fn perform(participant: &Participant, course_id: i64) -> Result<()> {
     }
 }
 
-fn parse_form(document: &Html) -> Result<ElementRef> {
+pub fn parse_form(document: &Html) -> Result<ElementRef> {
     let form_selector =
         scraper::Selector::parse("form").map_err(|e| eyre!("scraper error: {e}"))?;
     let form_element = document

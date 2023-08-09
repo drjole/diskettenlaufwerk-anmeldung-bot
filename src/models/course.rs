@@ -7,6 +7,8 @@ use url::Url;
 
 use crate::utils::http::request_document;
 
+use super::signup::parse_form;
+
 #[derive(Debug, Clone)]
 pub struct Course {
     pub id: i64,
@@ -212,6 +214,18 @@ impl Course {
             courses.push(course);
         }
         Ok(courses)
+    }
+
+    pub async fn is_signup_available(&self) -> bool {
+        let client = reqwest::Client::new();
+        let form_url = format!(
+            "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi?Kursid={}",
+            self.id
+        );
+        let request = client.get(&form_url);
+        let Ok(response) = request_document(request).await else { return false };
+        let document = scraper::Html::parse_document(response.as_str());
+        parse_form(&document).is_ok()
     }
 }
 

@@ -68,6 +68,11 @@ async fn run_scraper() -> Result<()> {
             return Ok(());
     };
 
+    if !course_today.is_signup_available().await {
+        log::info!("signup for course for today is not yet available");
+        return Ok(());
+    }
+
     let bot = Bot::from_env();
     let storage: MyStorage = RedisStorage::open(env::var("REDIS_URL")?, Bincode)
         .await?
