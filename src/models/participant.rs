@@ -147,16 +147,14 @@ impl Participant {
     }
 
     pub async fn delete(&mut self, pool: &Pool<Postgres>) -> Result<()> {
-        self.given_name = None;
-        self.last_name = None;
-        self.gender = None;
-        self.street = None;
-        self.city = None;
-        self.phone = None;
-        self.email = None;
-        self.status = None;
-        self.status_info = None;
-        self.update(pool).await?;
+        sqlx::query!(
+            r#"
+            DELETE FROM participants WHERE id = $1
+            "#,
+            self.id
+        )
+        .execute(pool)
+        .await?;
         Ok(())
     }
 

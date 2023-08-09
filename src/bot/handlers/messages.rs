@@ -400,7 +400,7 @@ pub async fn receive_delete_confirmation(
             } else {
                 bot.send_message(
                     dialogue.chat_id(),
-                    "Deine Daten wurden <u>nicht</b> gelöscht.",
+                    "Deine Daten wurden <u>nicht</u> gelöscht.",
                 )
                 .parse_mode(teloxide::types::ParseMode::Html)
                 .await?;
