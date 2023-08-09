@@ -4,6 +4,7 @@ services:
   bot:
     build: .
     command: /diskettenlaufwerk-anmeldung-bot bot
+    restart: always
     depends_on:
       - db
       - redis
