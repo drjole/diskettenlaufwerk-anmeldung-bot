@@ -161,6 +161,7 @@ impl Course {
                     .next()
                     .ok_or_else(|| eyre!("no third value for date component"))?,
             );
+            let date: String = date.chars().take(10).collect();
             let time = &table_cells[table_headers
                 .get("Zeit")
                 .ok_or_else(|| eyre!("no header 'Zeit'"))?];
