@@ -64,8 +64,8 @@ async fn run_scraper() -> Result<()> {
     log::info!("fetching new courses");
     Course::fetch(&pool).await?;
     let Some(course_today) = Course::today(&pool).await? else {
-            log::info!("no course found for today");
-            return Ok(());
+        log::info!("no course found for today");
+        return Ok(());
     };
 
     if !course_today.is_signup_available().await {
@@ -92,7 +92,6 @@ async fn run_scraper() -> Result<()> {
             }
         } else {
             log::warn!("no dialogue found for participant {}", participant.id);
-            continue;
         }
 
         log::info!("informing participant {}", participant.id);
