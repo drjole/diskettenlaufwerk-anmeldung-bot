@@ -95,12 +95,20 @@ async fn run_scraper() -> Result<()> {
         }
 
         log::info!("informing participant {}", participant.id);
-        bot.send_message(
-            ChatId(participant.id),
-            TextMessage::SignupResponse(course_today.clone()).to_string(),
-        )
-        .reply_markup(keyboards::signup())
-        .await?;
+        match bot
+            .send_message(
+                ChatId(participant.id),
+                TextMessage::SignupResponse(course_today.clone()).to_string(),
+            )
+            .reply_markup(keyboards::signup())
+            .await
+        {
+            Ok(_) => log::info!("successfully informed participant {}", participant.id),
+            Err(e) => {
+                log::error!("failed to inform participant {}: {}", participant.id, e);
+                continue;
+            }
+        };
         participant
             .set_signup_status(&pool, course_today.id, signup::Status::Notified)
             .await?;
