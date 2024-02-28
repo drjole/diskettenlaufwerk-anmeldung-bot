@@ -32,7 +32,9 @@ services:
       POSTGRES_DB: frisbee
       POSTGRES_PASSWORD: password
     volumes:
-      - "./db:/var/lib/postgresql/data"
+      - "bot-db:/var/lib/postgresql/data"
   redis:
     image: redis:7
     restart: always
+volumes:
+  bot-db:
