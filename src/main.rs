@@ -79,7 +79,7 @@ async fn run_scraper() -> Result<()> {
         .erase();
 
     log::info!("informing participants");
-    for participant in &Participant::uninformed(&pool, course_today.id).await? {
+    for participant in &mut Participant::uninformed(&pool, course_today.id).await? {
         // Only inform participants that are not currently editing their data.
         let dialogue = storage
             .clone()
@@ -103,23 +103,38 @@ async fn run_scraper() -> Result<()> {
             .reply_markup(keyboards::signup())
             .await
         {
-            Ok(_) => log::info!("successfully informed participant {}", participant.id),
+            Ok(_) => {
+                participant
+                    .set_signup_status(&pool, course_today.id, signup::Status::Notified)
+                    .await?;
+                storage
+                    .clone()
+                    .update_dialogue(
+                        ChatId(participant.id),
+                        State::ReceiveSignupResponse(course_today.id),
+                    )
+                    .await
+                    .map_err(|e| eyre!(e))?;
+                log::info!("successfully informed participant {}", participant.id)
+            }
             Err(e) => {
                 log::error!("failed to inform participant {}: {}", participant.id, e);
+                if e.to_string().contains("bot was blocked by the user") {
+                    log::info!(
+                        "participant {} blocked the bot, deleting the participant and their dialogue now",
+                        participant.id
+                    );
+                    participant.delete(&pool).await?;
+                    storage
+                        .clone()
+                        .remove_dialogue(ChatId(participant.id))
+                        .await
+                        .map_err(|e| eyre!(e))?;
+                    return Ok(());
+                }
                 continue;
             }
         };
-        participant
-            .set_signup_status(&pool, course_today.id, signup::Status::Notified)
-            .await?;
-        storage
-            .clone()
-            .update_dialogue(
-                ChatId(participant.id),
-                State::ReceiveSignupResponse(course_today.id),
-            )
-            .await
-            .map_err(|e| eyre!(e))?;
 
         log::info!("sleep for 200ms to respect Telegram API rate limiting");
         sleep(Duration::from_millis(200)).await;
