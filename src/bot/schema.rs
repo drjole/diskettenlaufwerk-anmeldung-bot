@@ -1,6 +1,7 @@
 use crate::bot::handlers;
 use color_eyre::Result;
 use sqlx::{Pool, Postgres};
+use std::time::Duration;
 use teloxide::{
     dispatching::{
         dialogue::{self, serializer::Bincode, ErasedStorage, RedisStorage, Storage},
@@ -91,7 +92,10 @@ pub enum Command {
 }
 
 pub async fn start(pool: Pool<Postgres>, redis_url: String) -> Result<()> {
-    let bot = Bot::from_env();
+    let client = teloxide::net::default_reqwest_settings()
+        .timeout(Duration::from_secs(60))
+        .build()?;
+    let bot = Bot::from_env_with_client(client);
     bot.set_my_commands(Command::bot_commands().into_iter().take(6))
         .await?;
     let storage: MyStorage = RedisStorage::open(redis_url, Bincode).await?.erase();
