@@ -41,6 +41,8 @@ Damit habe ich alle Daten, die ich brauche.
 
 Wenn du deine Daten ändern willst, nutze die /edit... Befehle. Diese findest du auch, wenn du dir deine Daten mittels /show_data anzeigen lässt.
 
+Wenn du deine Daten löschen möchtest, nutze den /delete Befehl. Alternativ kannst du mich auch blockieren. Dann werden deine Daten gelöscht, sobald ich dich für das nächste Training benachrichtigen würde.
+
 Wenn Trainings anstehen, wirst du von mir benachrichtigt. Du kannst dann antworten und dich anmelden lassen.",
                 emojis::get_by_shortcode("tada").ok_or(std::fmt::Error)?
             ),
