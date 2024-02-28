@@ -130,7 +130,6 @@ async fn run_scraper() -> Result<()> {
                         .remove_dialogue(ChatId(participant.id))
                         .await
                         .map_err(|e| eyre!(e))?;
-                    return Ok(());
                 }
                 continue;
             }
