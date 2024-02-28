@@ -1,6 +1,9 @@
-use chrono::{NaiveDateTime, TimeZone};
+use chrono::NaiveDateTime;
 use chrono_tz::Europe;
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{
+    eyre::{eyre, OptionExt},
+    Result,
+};
 use sqlx::{Pool, Postgres};
 use std::{collections::HashMap, fmt::Display};
 use url::Url;
@@ -182,15 +185,22 @@ impl Course {
                 .get("Kursid")
                 .ok_or_else(|| eyre!("no query param 'Kursid'"))?;
             let id: i64 = id_string.parse()?;
-            let start_time = Europe::Berlin
-                .datetime_from_str(
-                    &format!("{date} {start_time_of_day}:00"),
-                    "%d.%m.%Y %H:%M:%S",
-                )?
-                .naive_utc();
-            let end_time = Europe::Berlin
-                .datetime_from_str(&format!("{date} {end_time_of_day}:00"), "%d.%m.%Y %H:%M:%S")?
-                .naive_utc();
+            let start_time = NaiveDateTime::parse_from_str(
+                &format!("{date} {start_time_of_day}:00"),
+                "%d.%m.%Y %H:%M:%S",
+            )?
+            .and_local_timezone(Europe::Berlin)
+            .single()
+            .ok_or_eyre("could not convert to local timezone")?
+            .naive_utc();
+            let end_time = NaiveDateTime::parse_from_str(
+                &format!("{date} {end_time_of_day}:00"),
+                "%d.%m.%Y %H:%M:%S",
+            )?
+            .and_local_timezone(Europe::Berlin)
+            .single()
+            .ok_or_eyre("could not convert to local timezone")?
+            .naive_utc();
             let level = table_cells[table_headers
                 .get("Bezeichnung")
                 .ok_or_else(|| eyre!("no header 'Bezeichnung'"))?]
@@ -224,7 +234,9 @@ impl Course {
             self.id
         );
         let request = client.get(&form_url);
-        let Ok(response) = request_document(request).await else { return false };
+        let Ok(response) = request_document(request).await else {
+            return false;
+        };
         let document = scraper::Html::parse_document(response.as_str());
         parse_form(&document).is_ok()
     }
