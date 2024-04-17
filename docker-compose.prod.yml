@@ -4,12 +4,18 @@ services:
     extends:
       file: docker-compose.yml
       service: bot
+    depends_on:
+      - db
+      - redis
 
   scraper:
     image: ghcr.io/drjole/diskettenlaufwerk-anmeldung-bot:latest
     extends:
       file: docker-compose.yml
       service: scraper
+    depends_on:
+      - db
+      - redis
 
   db:
     extends:
