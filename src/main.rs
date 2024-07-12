@@ -23,7 +23,7 @@ use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv::dotenv().map_or_else(
+    dotenvy::dotenv().map_or_else(
         |_| println!("did not initialize dotenv"),
         |path| {
             println!(

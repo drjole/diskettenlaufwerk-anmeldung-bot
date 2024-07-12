@@ -6,23 +6,23 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4.24"
-chrono-tz = "0.8.2"
-color-eyre = "0.6.2"
-dotenv = "0.15.0"
-emojis = "0.6.0"
+chrono = "0.4.38"
+chrono-tz = "0.9.0"
+color-eyre = "0.6.3"
+dotenvy = "0.15.7"
+emojis = "0.6.2"
 encoding = "0.2.33"
-form_urlencoded = "1.1.0"
-itertools = "0.11.0"
-lazy_static = "1.4.0"
-log = "0.4.17"
-pretty_env_logger = "0.4.0"
-regex = "1.9.1"
-reqwest = "0.11.17"
-scraper = "0.16.0"
-serde = { version = "1.0.171", features = ["derive"] }
-serde_json = "1.0.102"
-sqlx = { version = "0.7", features = [
+form_urlencoded = "1.2.1"
+itertools = "0.13.0"
+lazy_static = "1.5.0"
+log = "0.4.22"
+pretty_env_logger = "0.5.0"
+regex = "1.10.5"
+reqwest = "0.12.5"
+scraper = "0.19.0"
+serde = { version = "1.0.204", features = ["derive"] }
+serde_json = "1.0.120"
+sqlx = { version = "0.7.4", features = [
   "runtime-tokio",
   "tls-rustls",
   "postgres",
@@ -30,15 +30,15 @@ sqlx = { version = "0.7", features = [
   "migrate",
   "chrono",
 ] }
-strum = { version = "0.25", features = ["derive"] }
-teloxide = { version = "0.12", features = [
+strum = { version = "0.26.3", features = ["derive"] }
+teloxide = { version = "0.12.2", features = [
   "macros",
   "rustls",
   "redis-storage",
   "bincode-serializer",
 ] }
-tokio = { version = "1.28.0", features = ["full"] }
-url = "2.3.1"
+tokio = { version = "1.38.0", features = ["full"] }
+url = "2.5.2"
 
 [profile.dev.package.backtrace]
 opt-level = 3

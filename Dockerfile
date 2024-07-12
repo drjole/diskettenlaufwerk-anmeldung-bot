@@ -1,4 +1,4 @@
-FROM rust:1.71 as build
+FROM rust:1.79-bookworm AS build
 
 WORKDIR /
 RUN cargo new diskettenlaufwerk-anmeldung-bot
@@ -14,11 +14,11 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry <<EOF
   cargo build --release
 EOF
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 RUN apt-get update && \
-  apt-get install -y ca-certificates openssl && \
-  rm -rf /var/lib/apt/lists/*
+    apt-get install -y ca-certificates openssl && \
+    rm -rf /var/lib/apt/lists/*
 COPY --from=build /diskettenlaufwerk-anmeldung-bot/target/release/diskettenlaufwerk-anmeldung-bot /diskettenlaufwerk-anmeldung-bot
 RUN chmod +x /diskettenlaufwerk-anmeldung-bot
 
