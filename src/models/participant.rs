@@ -192,13 +192,13 @@ impl Participant {
     pub fn is_student(&self) -> bool {
         self.status
             .clone()
-            .map_or(false, |status| status.is_student())
+            .is_some_and(|status| status.is_student())
     }
 
     pub fn is_employed_at_cgn_uni_related_thing(&self) -> bool {
-        self.status.clone().map_or(false, |status| {
-            status.is_employed_at_cgn_uni_related_thing()
-        })
+        self.status
+            .clone()
+            .is_some_and(|status| status.is_employed_at_cgn_uni_related_thing())
     }
 
     pub fn status_info_name(&self) -> Option<String> {
