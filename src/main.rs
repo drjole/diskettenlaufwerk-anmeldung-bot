@@ -74,7 +74,7 @@ async fn run_scraper() -> Result<()> {
     }
 
     let bot = Bot::from_env();
-    let storage: MyStorage = RedisStorage::open(env::var("REDIS_URL")?, Bincode)
+    let storage: MyStorage = RedisStorage::open(&env::var("REDIS_URL")?, Bincode)
         .await?
         .erase();
 

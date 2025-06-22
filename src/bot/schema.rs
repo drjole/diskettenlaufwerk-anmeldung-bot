@@ -98,7 +98,7 @@ pub async fn start(pool: Pool<Postgres>, redis_url: String) -> Result<()> {
     let bot = Bot::from_env_with_client(client);
     bot.set_my_commands(Command::bot_commands().into_iter().take(6))
         .await?;
-    let storage: MyStorage = RedisStorage::open(redis_url, Bincode).await?.erase();
+    let storage: MyStorage = RedisStorage::open(&redis_url, Bincode).await?.erase();
     Dispatcher::builder(bot, schema())
         .dependencies(dptree::deps![storage, pool])
         .enable_ctrlc_handler()

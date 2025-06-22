@@ -15,8 +15,8 @@ pub fn gender() -> KeyboardMarkup {
     }
 
     KeyboardMarkup::new(keyboard)
-        .resize_keyboard(true)
-        .one_time_keyboard(true)
+        .resize_keyboard()
+        .one_time_keyboard()
 }
 
 pub fn status() -> KeyboardMarkup {
@@ -31,7 +31,7 @@ pub fn status() -> KeyboardMarkup {
         keyboard.push(row);
     }
 
-    KeyboardMarkup::new(keyboard).one_time_keyboard(true)
+    KeyboardMarkup::new(keyboard).one_time_keyboard()
 }
 
 pub fn signup() -> KeyboardMarkup {
@@ -47,8 +47,8 @@ pub fn signup() -> KeyboardMarkup {
     }
 
     KeyboardMarkup::new(keyboard)
-        .resize_keyboard(true)
-        .one_time_keyboard(true)
+        .resize_keyboard()
+        .one_time_keyboard()
 }
 
 pub fn no_answer() -> InlineKeyboardMarkup {
