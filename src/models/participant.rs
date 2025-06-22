@@ -217,6 +217,7 @@ impl Participant {
 impl std::fmt::Display for Participant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let status_info = match &self.status {
+            Some(Status::Gast) | None => String::new(),
             Some(_) => format!(
                 "\n{}: {} (/edit_status_info)",
                 self.status_info_name().unwrap_or_default(),
@@ -224,7 +225,6 @@ impl std::fmt::Display for Participant {
                     .as_ref()
                     .map_or("<i>leer</i>", String::as_str)
             ),
-            None => String::new(),
         };
 
         write!(
