@@ -258,6 +258,9 @@ pub async fn receive_status(
         })
     }) {
         participant.status = Some(status.clone());
+        if Some(status) == Some(Status::Gast) {
+            participant.status_info = None;
+        }
         participant.update(&pool).await?;
         let state = dialogue_utils::state(&dialogue).await?;
         if state.is_in_dialogue() {
