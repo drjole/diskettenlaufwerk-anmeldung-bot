@@ -1,4 +1,4 @@
-FROM rust:1.79-bookworm AS build
+FROM rust:1.87-bookworm AS build
 
 WORKDIR /
 RUN cargo new diskettenlaufwerk-anmeldung-bot
