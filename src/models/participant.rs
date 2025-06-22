@@ -222,7 +222,7 @@ impl std::fmt::Display for Participant {
                 self.status_info_name().unwrap_or_default(),
                 self.status_info
                     .as_ref()
-                    .map_or("<i>leer<i>", String::as_str)
+                    .map_or("<i>leer</i>", String::as_str)
             ),
             None => String::new(),
         };
