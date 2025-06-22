@@ -13,7 +13,10 @@ const SIGNUP_URL: &str = "https://isis.verw.uni-koeln.de/cgi/anmeldung.fcgi";
 
 #[derive(Debug, Clone)]
 pub struct Signup {
+    // NOTE: These fields are only used in SQL queries right now so that clippy cannot detect their usage.
+    #[allow(dead_code)]
     pub participant_id: i64,
+    #[allow(dead_code)]
     pub course_id: i64,
     pub status: Status,
 }
