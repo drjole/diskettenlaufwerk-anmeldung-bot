@@ -1,6 +1,7 @@
 use crate::{
     bot::{
         dialogue_utils, keyboards,
+        message_effect::MessageEffect,
         schema::{MyDialogue, State},
         text_messages::TextMessage,
     },
@@ -258,18 +259,28 @@ pub async fn receive_status(
         })
     }) {
         participant.status = Some(status.clone());
-        if Some(status) == Some(Status::Gast) {
+        if Some(status.clone()) == Some(Status::Gast) {
             participant.status_info = None;
         }
         participant.update(&pool).await?;
         let state = dialogue_utils::state(&dialogue).await?;
         if state.is_in_dialogue() {
-            dialogue_utils::update(State::ReceiveStatusInfo(true), bot, dialogue, &pool).await?;
+            if Some(status) == Some(Status::Gast) {
+                bot.send_message(msg.chat.id, TextMessage::EnterDataComplete.to_string())
+                    .message_effect_id(MessageEffect::Celebration.id())
+                    .await?;
+            } else {
+                dialogue_utils::update(State::ReceiveStatusInfo(true), bot, dialogue, &pool)
+                    .await?;
+            }
         } else {
             bot.send_message(dialogue.chat_id(), "Status geändert.")
                 .reply_markup(KeyboardRemove::default())
                 .await?;
-            dialogue_utils::update(State::ReceiveStatusInfo(false), bot, dialogue, &pool).await?;
+            if Some(status) != Some(Status::Gast) {
+                dialogue_utils::update(State::ReceiveStatusInfo(false), bot, dialogue, &pool)
+                    .await?;
+            }
         }
     } else {
         let keyboard = keyboards::status();
@@ -299,6 +310,7 @@ pub async fn receive_status_info(
             participant.update(&pool).await?;
             if state.is_in_dialogue() {
                 bot.send_message(msg.chat.id, TextMessage::EnterDataComplete.to_string())
+                    .message_effect_id(MessageEffect::Celebration.id())
                     .await?;
             } else {
                 bot.send_message(msg.chat.id, format!("{status_info_name} geändert.",))
@@ -349,6 +361,7 @@ pub async fn receive_signup_response(
         match signup_request {
             signup::Request::Accept => {
                 bot.send_message(msg.chat.id, "Ok, einen Moment bitte...")
+                    .message_effect_id(MessageEffect::Heart.id())
                     .reply_markup(KeyboardRemove::default())
                     .await?;
                 match signup::perform(&participant, course_id).await {
@@ -356,19 +369,26 @@ pub async fn receive_signup_response(
                         participant
                             .set_signup_status(&pool, course_id, signup::Status::SignedUp)
                             .await?;
-                        bot.send_message(msg.chat.id, "Das hat geklappt! Wenn du deine E-Mail-Adresse angegeben hast, findest du gleich eine Bestätigung in deinem Postfach.").await?;
+                        bot.send_message(
+                            msg.chat.id,
+                            "Das hat geklappt! Wenn du deine E-Mail-Adresse angegeben hast, findest du gleich eine Bestätigung in deinem Postfach."
+                        )
+                            .message_effect_id(MessageEffect::ThumbsUp.id())
+                        .await?;
                     }
                     Err(err) => {
                         bot.send_message(
                             msg.chat.id,
                             format!("Fehler bei der Anmeldung:\n\n{err}\n\nWenn du das Problem selber beheben kannst, versuche es später noch einmal mit /signup. Melde dich ansonsten bei den Entwicklern."),
                         )
+                            .message_effect_id(MessageEffect::Poop.id())
                         .await?;
                     }
                 };
             }
             signup::Request::Reject => {
                 bot.send_message(msg.chat.id, "Ok, dann vielleicht beim nächsten Mal! Solltest du dich umentscheiden, kannst du den /signup Befehl nutzen, um dich doch noch anzumelden.")
+                    .message_effect_id(MessageEffect::ThumbsDown.id())
                     .reply_markup(KeyboardRemove::default())
                     .await?;
                 participant

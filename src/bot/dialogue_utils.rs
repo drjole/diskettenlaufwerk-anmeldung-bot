@@ -8,7 +8,10 @@ use crate::{
 };
 use color_eyre::{eyre::eyre, Result};
 use sqlx::{Pool, Postgres};
+use strum::EnumProperty;
 use teloxide::{prelude::*, types::KeyboardRemove};
+
+use super::message_effect::MessageEffect;
 
 pub async fn state(dialogue: &MyDialogue) -> Result<State> {
     dialogue
@@ -51,7 +54,12 @@ pub async fn update(
             } else if participant.is_employed_at_cgn_uni_related_thing() {
                 "Bitte gib deine dienstliche Telefonnummer ein.".into()
             } else {
-                "this is ignored later!".into()
+                format!(
+                    "Du musst diese Information mit deinem aktuellen Status ({}) nicht eingeben. Ändere deinen Status mit /edit_status.",
+                    participant.status.as_ref().map_or("<i>leer</i>", |s| s
+                        .get_str("pretty")
+                        .unwrap_or("Better set that enum prop"))
+                )
             }
         }
         State::ReceiveDeleteConfirmation => {
@@ -94,6 +102,8 @@ pub async fn update(
         }
         State::ReceiveSignupResponse(_) => {
             bot.send_message(dialogue.chat_id(), message)
+                .parse_mode(teloxide::types::ParseMode::Html)
+                .message_effect_id(MessageEffect::Fire.id())
                 .reply_markup(keyboards::signup())
                 .await?;
         }
