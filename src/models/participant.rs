@@ -19,6 +19,7 @@ pub struct Participant {
     pub email: Option<String>,
     pub status: Option<Status>,
     pub status_info: Option<String>,
+    pub signup_always: bool,
 }
 
 impl Participant {
@@ -48,7 +49,7 @@ impl Participant {
         let participant = sqlx::query_as!(
             Participant,
             r#"
-            SELECT id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_info
+            SELECT id, given_name, last_name, gender as "gender: _", street, city, phone, email, status as "status: _", status_info, signup_always
             FROM participants
             WHERE id = $1
             "#,
@@ -63,7 +64,7 @@ impl Participant {
         let participants = sqlx::query_as!(
             Participant,
             r#"
-            SELECT id, given_name, last_name, gender as "gender: _", street, city, phone, email, participants.status as "status: _", status_info
+            SELECT id, given_name, last_name, gender as "gender: _", street, city, phone, email, participants.status as "status: _", status_info, signup_always
             FROM participants
             WHERE NOT EXISTS (
                 SELECT 1

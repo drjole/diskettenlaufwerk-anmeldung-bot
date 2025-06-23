@@ -94,6 +94,32 @@ async fn run_scraper() -> Result<()> {
             log::warn!("no dialogue found for participant {}", participant.id);
         }
 
+        if participant.signup_always {
+            log::info!(
+                "participant {} wants to be signed up always",
+                participant.id
+            );
+            participant
+                .set_signup_status(&pool, course_today.id, signup::Status::Notified)
+                .await?;
+            match signup::perform(participant, course_today.id).await {
+                Ok(_) => {
+                    participant
+                        .set_signup_status(&pool, course_today.id, signup::Status::SignedUp)
+                        .await?;
+                }
+                Err(err) => {
+                    log::error!(
+                        "failed to sign up participant {} for {}: {}",
+                        participant.id,
+                        course_today.id,
+                        err
+                    );
+                }
+            };
+            continue;
+        }
+
         log::info!("informing participant {}", participant.id);
         match bot
             .send_message(

@@ -1,0 +1,2 @@
+ALTER TABLE participants
+ADD COLUMN signup_always BOOLEAN NOT NULL DEFAULT FALSE;
