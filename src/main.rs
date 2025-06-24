@@ -7,6 +7,7 @@ mod utils;
 use crate::{
     bot::{
         keyboards,
+        message_effect::MessageEffect,
         schema::{MyStorage, State},
         text_messages::TextMessage,
     },
@@ -126,6 +127,7 @@ async fn run_scraper() -> Result<()> {
                 ChatId(participant.id),
                 TextMessage::SignupResponse(course_today.clone()).to_string(),
             )
+            .message_effect_id(MessageEffect::Fire.id())
             .reply_markup(keyboards::signup())
             .await
         {
