@@ -158,6 +158,17 @@ async fn run_scraper() -> Result<()> {
                         .remove_dialogue(ChatId(participant.id))
                         .await
                         .map_err(|e| eyre!(e))?;
+                } else if e.to_string().contains("user is deactivated") {
+                    log::info!(
+                        "participant {} is a deactivated Telegram user, deleting the participant and their dialogue now",
+                        participant.id
+                    );
+                    participant.delete(&pool).await?;
+                    storage
+                        .clone()
+                        .remove_dialogue(ChatId(participant.id))
+                        .await
+                        .map_err(|e| eyre!(e))?;
                 }
                 continue;
             }
